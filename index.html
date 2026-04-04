@@ -83,6 +83,10 @@
             background: #1f2a3b;
             color: #ffaa44;
         }
+        .status.loading {
+            background: #1f2a3b;
+            color: #6a00ff;
+        }
         button {
             background: linear-gradient(135deg, #6a00ff, #a855f7);
             color: white;
@@ -95,12 +99,13 @@
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
         }
-        button:hover {
+        button:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 10px 25px rgba(106, 0, 255, 0.3);
         }
-        button:active {
-            transform: translateY(0);
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
         .result-card {
             margin-top: 30px;
@@ -181,17 +186,17 @@
         <div class="result-field">
             <label>🔗 API Endpoint</label>
             <input type="text" id="apiInput" readonly>
-            <button class="copy-btn" onclick="copyToClipboard('apiInput')">Copy</button>
+            <button class="copy-btn" data-input="apiInput">Copy</button>
         </div>
         <div class="result-field">
-            <label>📦 Base64</label>
+            <label>📦 Base64 (truncated)</label>
             <input type="text" id="base64Input" readonly>
-            <button class="copy-btn" onclick="copyToClipboard('base64Input')">Copy</button>
+            <button class="copy-btn" data-input="base64Input">Copy</button>
         </div>
         <div class="result-field">
             <label>🖼️ Proxy Link</label>
             <input type="text" id="linkInput" readonly>
-            <button class="copy-btn" onclick="copyToClipboard('linkInput')">Copy</button>
+            <button class="copy-btn" data-input="linkInput">Copy</button>
         </div>
         <div class="preview" id="preview"></div>
     </div>
@@ -263,6 +268,8 @@
 
         convertBtn.disabled = true;
         convertBtn.innerHTML = '<i class="fa-solid fa-spinner fa-pulse"></i> Processing...';
+        statusDiv.className = "status loading";
+        statusDiv.innerHTML = '<i class="fa-solid fa-spinner fa-pulse"></i> Mengirim file...';
 
         const formData = new FormData();
         formData.append("file", selectedFile);
@@ -273,21 +280,31 @@
                 body: formData
             });
 
-            const data = await res.json();
+            // Cek response type dulu
+            const contentType = res.headers.get("content-type");
+            let data;
+
+            if (contentType && contentType.includes("application/json")) {
+                data = await res.json();
+            } else {
+                const text = await res.text();
+                throw new Error(`Server returned: ${text.substring(0, 100)}`);
+            }
 
             if (!res.ok || data.error) {
                 throw new Error(data.error || "Convert failed");
             }
 
-            document.getElementById("apiInput").value = location.origin + data.api;
+            // Tampilkan hasil
+            document.getElementById("apiInput").value = window.location.origin + data.api;
             document.getElementById("base64Input").value = data.base64.substring(0, 100) + "... (truncated)";
-            document.getElementById("linkInput").value = location.origin + data.link;
+            document.getElementById("linkInput").value = window.location.origin + data.link;
             
             resultCard.style.display = "block";
 
             // Preview
             const previewDiv = document.getElementById("preview");
-            const fileUrl = location.origin + data.link;
+            const fileUrl = window.location.origin + data.link;
             if (selectedFile.type.startsWith("image")) {
                 previewDiv.innerHTML = `<img src="${fileUrl}" alt="Preview">`;
             } else {
@@ -298,20 +315,32 @@
             statusDiv.innerHTML = '<i class="fa-solid fa-check-circle"></i> Convert berhasil!';
 
         } catch (err) {
+            console.error("Error:", err);
             statusDiv.className = "status error";
             statusDiv.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> Error: ${err.message}`;
+            resultCard.style.display = "none";
         } finally {
             convertBtn.disabled = false;
             convertBtn.innerHTML = '<i class="fa-solid fa-repeat"></i> Convert & Upload';
         }
     }
 
-    function copyToClipboard(inputId) {
-        const input = document.getElementById(inputId);
-        input.select();
-        document.execCommand("copy");
-        alert("Copied!");
-    }
+    // Copy function
+    document.querySelectorAll(".copy-btn").forEach(btn => {
+        btn.addEventListener("click", function() {
+            const inputId = this.getAttribute("data-input");
+            const input = document.getElementById(inputId);
+            if (input && input.value) {
+                input.select();
+                document.execCommand("copy");
+                const originalText = this.innerHTML;
+                this.innerHTML = "Copied!";
+                setTimeout(() => {
+                    this.innerHTML = originalText;
+                }, 1500);
+            }
+        });
+    });
 
     convertBtn.onclick = convert;
 </script>
