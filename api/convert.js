@@ -47,40 +47,42 @@ export default async function handler(req, res) {
     }
     
     const url = req.url || "";
+    console.log("Method:", req.method, "URL:", url);
     
-    // Handle GET request for proxy (ambil file)
+    // HANDLE GET PROXY - ambil file dari store
     if (req.method === "GET") {
-        // Extract ID dari URL /x/BitWrap/xxxxx.png atau /api/convert/xxxxx.png
-        let id = "";
-        if (url.includes("/x/BitWrap/")) {
-            id = url.split("/x/BitWrap/")[1];
-        } else if (url.includes("/api/convert/")) {
-            id = url.split("/api/convert/")[1];
+        // Extract ID dari URL: /x/BitWrap/1a54c859cd.png
+        let match = url.match(/\/x\/BitWrap\/([^\/?#]+)/);
+        if (!match) {
+            match = url.match(/\/api\/convert\/([^\/?#]+)/);
         }
         
-        if (id && id.includes(".")) {
-            id = id.split(".")[0];
+        if (match) {
+            let id = match[1];
+            if (id && id.includes(".")) {
+                id = id.split(".")[0];
+            }
+            
+            console.log("GET Proxy - Extracted ID:", id);
+            
+            const file = store.get(id);
+            
+            if (!file) {
+                console.log("File not found in store. Available IDs:", Array.from(store.keys()));
+                return res.status(404).send("File not found or expired");
+            }
+            
+            const buffer = Buffer.from(file.data, "base64");
+            res.setHeader("Content-Type", file.type);
+            res.setHeader("Cache-Control", "public, max-age=3600");
+            return res.send(buffer);
         }
         
-        console.log("GET Proxy - ID:", id);
-        
-        if (!id) {
-            return res.status(400).send("Invalid request");
-        }
-        
-        const file = store.get(id);
-        
-        if (!file) {
-            return res.status(404).send("File not found or expired");
-        }
-        
-        const buffer = Buffer.from(file.data, "base64");
-        res.setHeader("Content-Type", file.type);
-        res.setHeader("Cache-Control", "public, max-age=3600");
-        return res.send(buffer);
+        // Jika bukan proxy request, return 404
+        return res.status(404).send("Not found");
     }
     
-    // Handle POST upload
+    // HANDLE POST UPLOAD
     if (req.method === "POST") {
         try {
             await runMiddleware(req, res, upload.single("file"));
@@ -111,12 +113,16 @@ export default async function handler(req, res) {
             };
             
             store.set(id, fileData);
+            console.log("File stored with ID:", id, "Store size:", store.size);
             
             if (expiryTime !== null) {
                 const delay = expiryTime - Date.now();
                 if (delay > 0) {
                     setTimeout(() => {
-                        if (store.has(id)) store.delete(id);
+                        if (store.has(id)) {
+                            store.delete(id);
+                            console.log(`File ${id} deleted after expiry`);
+                        }
                     }, delay);
                 }
             }
@@ -127,7 +133,8 @@ export default async function handler(req, res) {
                 success: true,
                 id: id,
                 link: proxyUrl,
-                base64: base64,
+                base64: base64.substring(0, 100) + "...",
+                fullBase64: base64,
                 type: req.file.mimetype,
                 size: req.file.size,
                 filename: req.file.originalname,
