@@ -8,21 +8,24 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const upload = multer({ limits: { fileSize: 50 * 1024 * 1024 } }); // batas 50MB
+const upload = multer({ limits: { fileSize: 50 * 1024 * 1024 } });
 
-// Multi-server memory store (masih ephemeral untuk Vercel)
 const store = new Map();
 
 function randomId(len) {
     return crypto.randomBytes(len).toString("hex").slice(0, len);
 }
 
-// Validasi file
 function isValidFile(mimetype) {
     return mimetype.startsWith("image/") || mimetype.startsWith("video/");
 }
 
-// API convert dengan validasi dan error handling lebih baik
+// Root endpoint - harus kirim HTML dulu, BUKAN JSON
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "index.html"));
+});
+
+// API convert
 app.post("/api/convert", upload.single("file"), (req, res) => {
     try {
         if (!req.file) {
@@ -44,14 +47,15 @@ app.post("/api/convert", upload.single("file"), (req, res) => {
             createdAt: Date.now()
         });
 
-        // Auto-cleanup setelah 1 jam
         setTimeout(() => {
             if (store.has(id)) store.delete(id);
         }, 3600000);
 
         const proxyUrl = `/x/BitWrap/${id}.${ext}`;
 
-        res.json({
+        // PASTIKAN response JSON valid
+        res.setHeader("Content-Type", "application/json");
+        return res.json({
             success: true,
             api: proxyUrl,
             base64: base64,
@@ -61,11 +65,12 @@ app.post("/api/convert", upload.single("file"), (req, res) => {
             size: req.file.size
         });
     } catch (error) {
-        res.status(500).json({ error: "Internal server error" });
+        console.error("Convert error:", error);
+        return res.status(500).json({ error: "Internal server error" });
     }
 });
 
-// Proxy endpoint dengan cache headers
+// Proxy endpoint
 app.get("/x/BitWrap/:id", (req, res) => {
     const id = req.params.id.split(".")[0];
     const file = store.get(id);
@@ -75,28 +80,26 @@ app.get("/x/BitWrap/:id", (req, res) => {
     }
 
     const buffer = Buffer.from(file.data, "base64");
-    res.set("Content-Type", file.type);
-    res.set("Cache-Control", "public, max-age=3600");
-    res.send(buffer);
+    res.setHeader("Content-Type", file.type);
+    res.setHeader("Cache-Control", "public, max-age=3600");
+    return res.send(buffer);
 });
 
-// Health check endpoint
+// Health check
 app.get("/api/health", (req, res) => {
-    res.json({
+    return res.json({
         status: "ok",
         storeSize: store.size,
         uptime: process.uptime()
     });
 });
 
-// Serve HTML
-app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "index.html"));
-});
-
-// Handle 404
+// 404 handler
 app.use((req, res) => {
-    res.status(404).json({ error: "Endpoint not found" });
+    if (req.path === "/api/convert" || req.path.startsWith("/api/")) {
+        return res.status(404).json({ error: "API endpoint not found" });
+    }
+    res.status(404).send("Not Found");
 });
 
 export default app;
