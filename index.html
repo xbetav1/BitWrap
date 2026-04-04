@@ -1,0 +1,70 @@
+// ======================= index.html =======================
+
+<!DOCTYPE html><html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BitWrap</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<style>
+body {
+  background: #0b0b12;
+  color: white;
+  font-family: Arial;
+  text-align: center;
+}
+.container {
+  margin-top: 50px;
+}
+button {
+  background: purple;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  margin: 10px;
+  cursor: pointer;
+}
+input {
+  width: 80%;
+  margin: 10px;
+  padding: 10px;
+  background: #111;
+  color: #0f0;
+  border: none;
+}
+</style>
+</head>
+<body>
+<div class="container">
+<h1><i class="fa-solid fa-bolt"></i> BitWrap</h1>
+<p>Layanan proxy berbasis Node.js sederhana untuk mengambil media eksternal, mengonversinya ke Base64, dan menyajikannya melalui URL pendek.</p><input type="file" id="file">
+<br>
+<button onclick="convert()"><i class="fa-solid fa-repeat"></i> Convert</button><div id="result" style="display:none;">
+  <input id="api" readonly>
+  <input id="base64" readonly>
+  <input id="link" readonly>
+</div>
+</div><script>
+async function convert() {
+  const fileInput = document.getElementById("file");
+  const file = fileInput.files[0];
+
+  if (!file) return alert("Pilih file dulu");
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch("/api/convert", {
+    method: "POST",
+    body: formData
+  });
+
+  const data = await res.json();
+
+  document.getElementById("result").style.display = "block";
+  document.getElementById("api").value = data.api;
+  document.getElementById("base64").value = data.base64;
+  document.getElementById("link").value = data.link;
+}
+</script></body>
+</html>
