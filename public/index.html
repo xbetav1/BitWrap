@@ -380,7 +380,6 @@
                 throw new Error(data.error || "Convert failed");
             }
 
-            // Tampilkan hasil
             document.getElementById("linkInput").value = window.location.origin + data.link;
             document.getElementById("base64Input").value = data.base64.substring(0, 100) + "... (truncated)";
             
@@ -394,7 +393,6 @@
             
             resultCard.style.display = "block";
 
-            // Preview
             const previewDiv = document.getElementById("preview");
             const fileUrl = window.location.origin + data.link;
             if (selectedFile.type.startsWith("image")) {
@@ -417,7 +415,6 @@
         }
     }
 
-    // Copy function
     document.querySelectorAll(".copy-btn").forEach(btn => {
         btn.addEventListener("click", function() {
             const inputId = this.getAttribute("data-input");
