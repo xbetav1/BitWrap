@@ -1,68 +1,319 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BitWrap</title>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-<style>
-body {
-  background: #0b0b12;
-  color: white;
-  font-family: Arial;
-  text-align: center;
-}
-.container {
-  margin-top: 50px;
-}
-button {
-  background: purple;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  margin: 10px;
-  cursor: pointer;
-}
-input {
-  width: 80%;
-  margin: 10px;
-  padding: 10px;
-  background: #111;
-  color: #0f0;
-  border: none;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BitWrap - Media Proxy Service</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: linear-gradient(135deg, #0b0b12 0%, #1a1a2e 100%);
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: rgba(18, 18, 28, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            border: 1px solid rgba(106, 0, 255, 0.3);
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #6a00ff, #a855f7);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .subtitle {
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 0.9rem;
+        }
+        .file-area {
+            background: #0f0f17;
+            border: 2px dashed #6a00ff;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+        .file-area:hover {
+            border-color: #a855f7;
+            background: #14141f;
+        }
+        .file-area i {
+            font-size: 48px;
+            color: #6a00ff;
+            margin-bottom: 15px;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .status {
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+        .status.success {
+            background: #0f3b1f;
+            color: #00ff88;
+        }
+        .status.error {
+            background: #3b1f1f;
+            color: #ff4444;
+        }
+        .status.waiting {
+            background: #1f2a3b;
+            color: #ffaa44;
+        }
+        button {
+            background: linear-gradient(135deg, #6a00ff, #a855f7);
+            color: white;
+            border: none;
+            padding: 14px 30px;
+            margin: 10px 0;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(106, 0, 255, 0.3);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .result-card {
+            margin-top: 30px;
+            padding: 20px;
+            background: #0f0f17;
+            border-radius: 15px;
+            display: none;
+        }
+        .result-card h3 {
+            margin-bottom: 15px;
+            color: #a855f7;
+        }
+        .result-field {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        .result-field label {
+            display: block;
+            font-size: 0.8rem;
+            color: #888;
+            margin-bottom: 5px;
+        }
+        .result-field input {
+            width: 100%;
+            padding: 12px;
+            background: #1a1a2e;
+            border: 1px solid #333;
+            border-radius: 10px;
+            color: #00ff88;
+            font-family: monospace;
+            font-size: 0.8rem;
+        }
+        .copy-btn {
+            background: #2a2a3e;
+            padding: 8px 15px;
+            margin-top: 5px;
+            font-size: 0.8rem;
+        }
+        .preview {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .preview img, .preview video {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 10px;
+            border: 1px solid #333;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 0.7rem;
+            color: #555;
+        }
+    </style>
 </head>
 <body>
 <div class="container">
-<h1><i class="fa-solid fa-bolt"></i> BitWrap</h1>
-<p>Layanan proxy berbasis Node.js sederhana untuk mengambil media eksternal, mengonversinya ke Base64, dan menyajikannya melalui URL pendek.</p><input type="file" id="file">
-<br>
-<button onclick="convert()"><i class="fa-solid fa-repeat"></i> Convert</button><div id="result" style="display:none;">
-  <input id="api" readonly>
-  <input id="base64" readonly>
-  <input id="link" readonly>
+    <h1><i class="fa-solid fa-bolt"></i> BitWrap</h1>
+    <div class="subtitle">Proxy & Base64 Converter untuk Media</div>
+
+    <div class="file-area" id="fileArea">
+        <i class="fa-solid fa-cloud-upload-alt"></i>
+        <p>Klik atau taruh file di sini</p>
+        <small>Support: Gambar & Video (Max 50MB)</small>
+    </div>
+    <input type="file" id="fileInput" accept="image/*,video/*">
+
+    <div class="status waiting" id="status">
+        <i class="fa-solid fa-circle-info"></i> Belum ada file dipilih
+    </div>
+
+    <button id="convertBtn">
+        <i class="fa-solid fa-repeat"></i> Convert & Upload
+    </button>
+
+    <div class="result-card" id="resultCard">
+        <h3><i class="fa-solid fa-link"></i> Hasil Convert</h3>
+        <div class="result-field">
+            <label>🔗 API Endpoint</label>
+            <input type="text" id="apiInput" readonly>
+            <button class="copy-btn" onclick="copyToClipboard('apiInput')">Copy</button>
+        </div>
+        <div class="result-field">
+            <label>📦 Base64</label>
+            <input type="text" id="base64Input" readonly>
+            <button class="copy-btn" onclick="copyToClipboard('base64Input')">Copy</button>
+        </div>
+        <div class="result-field">
+            <label>🖼️ Proxy Link</label>
+            <input type="text" id="linkInput" readonly>
+            <button class="copy-btn" onclick="copyToClipboard('linkInput')">Copy</button>
+        </div>
+        <div class="preview" id="preview"></div>
+    </div>
+
+    <div class="footer">
+        <i class="fa-regular fa-clock"></i> File otomatis terhapus setelah 1 jam
+    </div>
 </div>
-</div><script>
-async function convert() {
-  const fileInput = document.getElementById("file");
-  const file = fileInput.files[0];
 
-  if (!file) return alert("Pilih file dulu");
+<script>
+    const fileInput = document.getElementById("fileInput");
+    const fileArea = document.getElementById("fileArea");
+    const statusDiv = document.getElementById("status");
+    const convertBtn = document.getElementById("convertBtn");
+    const resultCard = document.getElementById("resultCard");
 
-  const formData = new FormData();
-  formData.append("file", file);
+    let selectedFile = null;
 
-  const res = await fetch("/api/convert", {
-    method: "POST",
-    body: formData
-  });
+    fileArea.addEventListener("click", () => fileInput.click());
+    fileArea.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        fileArea.style.borderColor = "#a855f7";
+    });
+    fileArea.addEventListener("dragleave", () => {
+        fileArea.style.borderColor = "#6a00ff";
+    });
+    fileArea.addEventListener("drop", (e) => {
+        e.preventDefault();
+        fileArea.style.borderColor = "#6a00ff";
+        if (e.dataTransfer.files.length) {
+            handleFile(e.dataTransfer.files[0]);
+        }
+    });
 
-  const data = await res.json();
+    fileInput.addEventListener("change", (e) => {
+        if (e.target.files.length) {
+            handleFile(e.target.files[0]);
+        }
+    });
 
-  document.getElementById("result").style.display = "block";
-  document.getElementById("api").value = data.api;
-  document.getElementById("base64").value = data.base64;
-  document.getElementById("link").value = data.link;
-}
-</script></body>
+    function handleFile(file) {
+        const validTypes = ["image/", "video/"];
+        const isValid = validTypes.some(t => file.type.startsWith(t));
+        
+        if (!isValid) {
+            statusDiv.className = "status error";
+            statusDiv.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Format tidak support! Hanya gambar/video.';
+            selectedFile = null;
+            return;
+        }
+        
+        if (file.size > 50 * 1024 * 1024) {
+            statusDiv.className = "status error";
+            statusDiv.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> File terlalu besar! Maksimal 50MB.';
+            selectedFile = null;
+            return;
+        }
+
+        selectedFile = file;
+        statusDiv.className = "status success";
+        statusDiv.innerHTML = `<i class="fa-solid fa-check-circle"></i> File siap: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+    }
+
+    async function convert() {
+        if (!selectedFile) {
+            alert("Pilih file dulu!");
+            return;
+        }
+
+        convertBtn.disabled = true;
+        convertBtn.innerHTML = '<i class="fa-solid fa-spinner fa-pulse"></i> Processing...';
+
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+
+        try {
+            const res = await fetch("/api/convert", {
+                method: "POST",
+                body: formData
+            });
+
+            const data = await res.json();
+
+            if (!res.ok || data.error) {
+                throw new Error(data.error || "Convert failed");
+            }
+
+            document.getElementById("apiInput").value = location.origin + data.api;
+            document.getElementById("base64Input").value = data.base64.substring(0, 100) + "... (truncated)";
+            document.getElementById("linkInput").value = location.origin + data.link;
+            
+            resultCard.style.display = "block";
+
+            // Preview
+            const previewDiv = document.getElementById("preview");
+            const fileUrl = location.origin + data.link;
+            if (selectedFile.type.startsWith("image")) {
+                previewDiv.innerHTML = `<img src="${fileUrl}" alt="Preview">`;
+            } else {
+                previewDiv.innerHTML = `<video controls src="${fileUrl}"></video>`;
+            }
+
+            statusDiv.className = "status success";
+            statusDiv.innerHTML = '<i class="fa-solid fa-check-circle"></i> Convert berhasil!';
+
+        } catch (err) {
+            statusDiv.className = "status error";
+            statusDiv.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> Error: ${err.message}`;
+        } finally {
+            convertBtn.disabled = false;
+            convertBtn.innerHTML = '<i class="fa-solid fa-repeat"></i> Convert & Upload';
+        }
+    }
+
+    function copyToClipboard(inputId) {
+        const input = document.getElementById(inputId);
+        input.select();
+        document.execCommand("copy");
+        alert("Copied!");
+    }
+
+    convertBtn.onclick = convert;
+</script>
+</body>
 </html>
