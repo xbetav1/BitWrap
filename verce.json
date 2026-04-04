@@ -1,23 +1,22 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "index.js",
-      "use": "@vercel/node"
+  "functions": {
+    "api/*.js": {
+      "maxDuration": 60
     }
-  ],
+  },
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/index.js"
+      "dest": "/api/$1"
     },
     {
       "src": "/x/BitWrap/(.*)",
-      "dest": "/index.js"
+      "dest": "/api/convert/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "/index.js"
+      "dest": "/public/$1"
     }
   ]
 }
