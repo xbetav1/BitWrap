@@ -1,7 +1,6 @@
 import multer from "multer";
 import crypto from "crypto";
 
-// In-memory store (Vercel serverless = ephemeral)
 const store = new Map();
 
 function randomId(len) {
@@ -23,26 +22,22 @@ function getExpiryTime(duration) {
     }
 }
 
-// Configure multer for Vercel
 const upload = multer({ 
     limits: { fileSize: 500 * 1024 * 1024 },
     storage: multer.memoryStorage()
 });
 
-// Helper to run middleware
 function runMiddleware(req, res, fn) {
     return new Promise((resolve, reject) => {
         fn(req, res, (result) => {
-            if (result instanceof Error) {
-                return reject(result);
-            }
+            if (result instanceof Error) return reject(result);
             return resolve(result);
         });
     });
 }
 
 export default async function handler(req, res) {
-    // Set CORS headers
+    // Set CORS
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -51,15 +46,27 @@ export default async function handler(req, res) {
         return res.status(200).end();
     }
     
-    // Handle proxy GET request
+    const url = req.url || "";
+    
+    // Handle GET request for proxy (ambil file)
     if (req.method === "GET") {
-        const pathParts = req.url.split("/");
-        let id = pathParts[pathParts.length - 1];
+        // Extract ID dari URL /x/BitWrap/xxxxx.png atau /api/convert/xxxxx.png
+        let id = "";
+        if (url.includes("/x/BitWrap/")) {
+            id = url.split("/x/BitWrap/")[1];
+        } else if (url.includes("/api/convert/")) {
+            id = url.split("/api/convert/")[1];
+        }
+        
         if (id && id.includes(".")) {
             id = id.split(".")[0];
         }
         
-        console.log("Proxy request for ID:", id);
+        console.log("GET Proxy - ID:", id);
+        
+        if (!id) {
+            return res.status(400).send("Invalid request");
+        }
         
         const file = store.get(id);
         
@@ -74,79 +81,66 @@ export default async function handler(req, res) {
     }
     
     // Handle POST upload
-    if (req.method !== "POST") {
-        return res.status(405).json({ error: "Method not allowed" });
+    if (req.method === "POST") {
+        try {
+            await runMiddleware(req, res, upload.single("file"));
+            
+            if (!req.file) {
+                return res.status(400).json({ error: "No file uploaded" });
+            }
+            
+            if (!isValidFile(req.file.mimetype)) {
+                return res.status(400).json({ error: "Invalid file type. Only images and videos allowed" });
+            }
+            
+            const duration = req.body.duration || "24h";
+            const isImage = req.file.mimetype.startsWith("image");
+            const ext = isImage ? "png" : "mp4";
+            const id = randomId(isImage ? 10 : 8);
+            const base64 = req.file.buffer.toString("base64");
+            const expiryTime = getExpiryTime(duration);
+            
+            const fileData = {
+                data: base64,
+                type: req.file.mimetype,
+                createdAt: Date.now(),
+                duration: duration,
+                expiryTime: expiryTime,
+                size: req.file.size,
+                filename: req.file.originalname
+            };
+            
+            store.set(id, fileData);
+            
+            if (expiryTime !== null) {
+                const delay = expiryTime - Date.now();
+                if (delay > 0) {
+                    setTimeout(() => {
+                        if (store.has(id)) store.delete(id);
+                    }, delay);
+                }
+            }
+            
+            const proxyUrl = `/x/BitWrap/${id}.${ext}`;
+            
+            return res.status(200).json({
+                success: true,
+                id: id,
+                link: proxyUrl,
+                base64: base64,
+                type: req.file.mimetype,
+                size: req.file.size,
+                filename: req.file.originalname,
+                duration: duration,
+                expiresAt: expiryTime ? new Date(expiryTime).toISOString() : "never",
+                createdAt: new Date().toISOString()
+            });
+            
+        } catch (error) {
+            console.error("Error:", error);
+            return res.status(500).json({ error: error.message || "Internal server error" });
+        }
     }
     
-    try {
-        // Run multer middleware
-        await runMiddleware(req, res, upload.single("file"));
-        
-        console.log("File received:", req.file ? req.file.originalname : "NO FILE");
-        
-        if (!req.file) {
-            return res.status(400).json({ error: "No file uploaded" });
-        }
-        
-        if (!isValidFile(req.file.mimetype)) {
-            return res.status(400).json({ error: "Invalid file type. Only images and videos allowed" });
-        }
-        
-        const duration = req.body.duration || "24h";
-        const isImage = req.file.mimetype.startsWith("image");
-        const ext = isImage ? "png" : "mp4";
-        const id = randomId(isImage ? 10 : 8);
-        const base64 = req.file.buffer.toString("base64");
-        const expiryTime = getExpiryTime(duration);
-        
-        const fileData = {
-            data: base64,
-            type: req.file.mimetype,
-            createdAt: Date.now(),
-            duration: duration,
-            expiryTime: expiryTime,
-            size: req.file.size,
-            filename: req.file.originalname
-        };
-        
-        store.set(id, fileData);
-        
-        // Schedule deletion
-        if (expiryTime !== null) {
-            const delay = expiryTime - Date.now();
-            if (delay > 0) {
-                setTimeout(() => {
-                    if (store.has(id)) {
-                        store.delete(id);
-                        console.log(`File ${id} deleted after expiry`);
-                    }
-                }, delay);
-            }
-        }
-        
-        const proxyUrl = `/x/BitWrap/${id}.${ext}`;
-        
-        let expiryText = "never";
-        if (expiryTime) {
-            expiryText = new Date(expiryTime).toISOString();
-        }
-        
-        return res.status(200).json({
-            success: true,
-            id: id,
-            api: proxyUrl,
-            link: proxyUrl,
-            base64: base64,
-            type: req.file.mimetype,
-            size: req.file.size,
-            filename: req.file.originalname,
-            duration: duration,
-            expiresAt: expiryText,
-            createdAt: new Date().toISOString()
-        });
-        
-    } catch (error) {
-        console.error("Convert error:", error);
-        return res.status(500).json({ error: error.message || "Internal server error" });
-    }
+    return res.status(405).json({ error: "Method not allowed" });
 }
