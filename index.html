@@ -3,7 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BitWrap - Media Proxy Service</title>
+    <!-- BASIC SEO -->
+<title>BitWrap - Upload & Convert Image/Video to Link Instantly</title>
+<meta name="title" content="BitWrap - Upload & Convert Image/Video to Link Instantly">
+<meta name="description" content="Upload gambar atau video dan langsung dapat link share dalam hitungan detik. Support auto expire (24h, 7d, 30d, atau permanen). Fast, simple, no ribet.">
+
+<meta name="keywords" content="upload file, convert image to link, video to link, base64 converter, file hosting gratis, share file cepat">
+<meta name="author" content="XBeta">
+
+<!-- RESPONSIVE -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- ICON -->
+<link rel="icon" type="image/png" href="/icon.png">
+<link rel="apple-touch-icon" href="/icon.png">
+
+<!-- OPEN GRAPH (WHATSAPP / FB / DISCORD PREVIEW) -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://your-domain.vercel.app/">
+<meta property="og:title" content="BitWrap - Upload & Convert Image/Video to Link Instantly">
+<meta property="og:description" content="Upload gambar/video → langsung jadi link. Bisa expire atau forever. No login, no ribet.">
+<meta property="og:image" content="https://your-domain.vercel.app/preview.png">
+
+<!-- TWITTER PREVIEW -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:url" content="https://your-domain.vercel.app/">
+<meta name="twitter:title" content="BitWrap - Upload & Convert Image/Video to Link Instantly">
+<meta name="twitter:description" content="Upload & convert file jadi link dalam detik. Simple & cepat.">
+<meta name="twitter:image" content="https://your-domain.vercel.app/preview.png">
+
+<!-- THEME COLOR (BIAR KECE DI MOBILE) -->
+<meta name="theme-color" content="#0f172a">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     <style>
         * {
@@ -22,7 +52,7 @@
             padding: 20px;
         }
         .container {
-            max-width: 800px;
+            max-width: 900px;
             width: 100%;
             background: rgba(18, 18, 28, 0.95);
             border-radius: 20px;
@@ -65,6 +95,49 @@
         input[type="file"] {
             display: none;
         }
+        .duration-selector {
+            background: #0f0f17;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .duration-selector label {
+            display: block;
+            margin-bottom: 10px;
+            color: #a855f7;
+            font-weight: bold;
+        }
+        .duration-options {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .duration-option {
+            flex: 1;
+            min-width: 80px;
+        }
+        .duration-option input {
+            display: none;
+        }
+        .duration-option label {
+            display: block;
+            padding: 12px 20px;
+            background: #1a1a2e;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid #333;
+            margin: 0;
+        }
+        .duration-option input:checked + label {
+            background: linear-gradient(135deg, #6a00ff, #a855f7);
+            border-color: #6a00ff;
+            color: white;
+        }
+        .duration-option label:hover {
+            border-color: #6a00ff;
+        }
         .status {
             margin: 15px 0;
             padding: 10px;
@@ -98,6 +171,7 @@
             font-weight: bold;
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
         }
         button:hover:not(:disabled) {
             transform: translateY(-2px);
@@ -143,6 +217,15 @@
             padding: 8px 15px;
             margin-top: 5px;
             font-size: 0.8rem;
+            width: auto;
+        }
+        .info-text {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 10px;
+            padding: 10px;
+            background: #1a1a2e;
+            border-radius: 10px;
         }
         .preview {
             margin-top: 20px;
@@ -158,20 +241,48 @@
             margin-top: 30px;
             font-size: 0.7rem;
             color: #555;
+            text-align: center;
+        }
+        .warning {
+            color: #ffaa44;
+            font-size: 0.7rem;
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
 <div class="container">
     <h1><i class="fa-solid fa-bolt"></i> BitWrap</h1>
-    <div class="subtitle">Proxy & Base64 Converter untuk Media</div>
+    <div class="subtitle">Proxy & Base64 Converter dengan Durasi Penyimpanan</div>
 
     <div class="file-area" id="fileArea">
         <i class="fa-solid fa-cloud-upload-alt"></i>
         <p>Klik atau taruh file di sini</p>
-        <small>Support: Gambar & Video (Max 50MB)</small>
+        <small>Support: Gambar & Video (Max 500MB)</small>
     </div>
     <input type="file" id="fileInput" accept="image/*,video/*">
+
+    <div class="duration-selector">
+        <label><i class="fa-regular fa-clock"></i> Durasi Penyimpanan:</label>
+        <div class="duration-options">
+            <div class="duration-option">
+                <input type="radio" name="duration" value="24h" id="dur24h" checked>
+                <label for="dur24h">24 Jam</label>
+            </div>
+            <div class="duration-option">
+                <input type="radio" name="duration" value="7d" id="dur7d">
+                <label for="dur7d">7 Hari</label>
+            </div>
+            <div class="duration-option">
+                <input type="radio" name="duration" value="30d" id="dur30d">
+                <label for="dur30d">30 Hari</label>
+            </div>
+            <div class="duration-option">
+                <input type="radio" name="duration" value="forever" id="durForever">
+                <label for="durForever">Selamanya</label>
+            </div>
+        </div>
+    </div>
 
     <div class="status waiting" id="status">
         <i class="fa-solid fa-circle-info"></i> Belum ada file dipilih
@@ -184,25 +295,22 @@
     <div class="result-card" id="resultCard">
         <h3><i class="fa-solid fa-link"></i> Hasil Convert</h3>
         <div class="result-field">
-            <label>🔗 API Endpoint</label>
-            <input type="text" id="apiInput" readonly>
-            <button class="copy-btn" data-input="apiInput">Copy</button>
+            <label>🔗 Proxy Link</label>
+            <input type="text" id="linkInput" readonly>
+            <button class="copy-btn" data-input="linkInput">Copy</button>
         </div>
         <div class="result-field">
             <label>📦 Base64 (truncated)</label>
             <input type="text" id="base64Input" readonly>
             <button class="copy-btn" data-input="base64Input">Copy</button>
         </div>
-        <div class="result-field">
-            <label>🖼️ Proxy Link</label>
-            <input type="text" id="linkInput" readonly>
-            <button class="copy-btn" data-input="linkInput">Copy</button>
-        </div>
+        <div class="info-text" id="infoText"></div>
         <div class="preview" id="preview"></div>
     </div>
 
     <div class="footer">
-        <i class="fa-regular fa-clock"></i> File otomatis terhapus setelah 1 jam
+        <i class="fa-regular fa-clock"></i> Pilih durasi penyimpanan sebelum upload<br>
+        <span class="warning">⚠️ File dengan durasi "Selamanya" akan tersimpan permanen hingga dihapus manual</span>
     </div>
 </div>
 
@@ -248,9 +356,9 @@
             return;
         }
         
-        if (file.size > 50 * 1024 * 1024) {
+        if (file.size > 500 * 1024 * 1024) {
             statusDiv.className = "status error";
-            statusDiv.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> File terlalu besar! Maksimal 50MB.';
+            statusDiv.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> File terlalu besar! Maksimal 500MB.';
             selectedFile = null;
             return;
         }
@@ -258,6 +366,21 @@
         selectedFile = file;
         statusDiv.className = "status success";
         statusDiv.innerHTML = `<i class="fa-solid fa-check-circle"></i> File siap: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+    }
+
+    function getSelectedDuration() {
+        const selected = document.querySelector('input[name="duration"]:checked');
+        return selected ? selected.value : "24h";
+    }
+
+    function formatExpiryText(duration) {
+        switch(duration) {
+            case "24h": return "24 jam (akan otomatis dihapus)";
+            case "7d": return "7 hari (akan otomatis dihapus)";
+            case "30d": return "30 hari (akan otomatis dihapus)";
+            case "forever": return "Selamanya (tidak akan dihapus otomatis)";
+            default: return duration;
+        }
     }
 
     async function convert() {
@@ -273,6 +396,7 @@
 
         const formData = new FormData();
         formData.append("file", selectedFile);
+        formData.append("duration", getSelectedDuration());
 
         try {
             const res = await fetch("/api/convert", {
@@ -280,7 +404,6 @@
                 body: formData
             });
 
-            // Cek response type dulu
             const contentType = res.headers.get("content-type");
             let data;
 
@@ -296,9 +419,16 @@
             }
 
             // Tampilkan hasil
-            document.getElementById("apiInput").value = window.location.origin + data.api;
-            document.getElementById("base64Input").value = data.base64.substring(0, 100) + "... (truncated)";
             document.getElementById("linkInput").value = window.location.origin + data.link;
+            document.getElementById("base64Input").value = data.base64.substring(0, 100) + "... (truncated)";
+            
+            const infoDiv = document.getElementById("infoText");
+            infoDiv.innerHTML = `
+                <i class="fa-regular fa-file"></i> Nama file: ${data.filename}<br>
+                <i class="fa-regular fa-clock"></i> Durasi: ${formatExpiryText(data.duration)}<br>
+                <i class="fa-regular fa-calendar"></i> Upload: ${new Date(data.createdAt).toLocaleString()}<br>
+                <i class="fa-regular fa-hourglass-half"></i> Expires: ${data.expiresAt !== "never" ? new Date(data.expiresAt).toLocaleString() : "Tidak akan pernah"}
+            `;
             
             resultCard.style.display = "block";
 
