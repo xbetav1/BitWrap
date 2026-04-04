@@ -16,7 +16,7 @@ const proxyUrl = /x/BitWrap/${id}.${ext};
 
 res.json({ api: proxyUrl, base64: base64, link: proxyUrl }); });
 
-app.get("/x/BitWrap/:id", (req, res) => { const id = req.params.id.split(".")[0]; const file = store.get(id);
+app.get("/x/:id", (req, res) => { const id = req.params.id.split(".")[0]; const file = store.get(id);
 
 if (!file) return res.status(404).send("Not found");
 
