@@ -8,7 +8,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const upload = multer({ limits: { fileSize: 500 * 1024 * 1024 } }); // 500MB max
+
+// Konfigurasi multer untuk Vercel (memory storage)
+const upload = multer({ 
+    limits: { fileSize: 500 * 1024 * 1024 },
+    storage: multer.memoryStorage()
+});
 
 const store = new Map();
 
@@ -32,7 +37,7 @@ function getExpiryTime(duration) {
 }
 
 function scheduleDeletion(id, expiryTime) {
-    if (expiryTime === null) return; // forever, no deletion
+    if (expiryTime === null) return;
     
     const delay = expiryTime - Date.now();
     if (delay <= 0) {
@@ -48,24 +53,33 @@ function scheduleDeletion(id, expiryTime) {
     }, delay);
 }
 
-// Root endpoint
+// Parse form data untuk duration
+app.use(express.urlencoded({ extended: true }));
+
+// Root endpoint - serve HTML
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "index.html"));
 });
 
-// API convert with duration option
+// API convert - PASTIKAN path ini match dengan yang dipanggil frontend
 app.post("/api/convert", upload.single("file"), (req, res) => {
+    console.log("=== /api/convert called ===");
+    console.log("File received:", req.file ? req.file.originalname : "NO FILE");
+    console.log("Body:", req.body);
+    
     try {
         if (!req.file) {
+            console.log("Error: No file");
             return res.status(400).json({ error: "No file uploaded" });
         }
 
         if (!isValidFile(req.file.mimetype)) {
+            console.log("Error: Invalid type", req.file.mimetype);
             return res.status(400).json({ error: "Invalid file type. Only images and videos allowed" });
         }
 
-        // Get duration from form data or query
-        const duration = req.body.duration || req.query.duration || "24h";
+        const duration = req.body.duration || "24h";
+        console.log("Duration:", duration);
         
         const isImage = req.file.mimetype.startsWith("image");
         const ext = isImage ? "png" : "mp4";
@@ -85,7 +99,6 @@ app.post("/api/convert", upload.single("file"), (req, res) => {
 
         store.set(id, fileData);
         
-        // Schedule deletion if not forever
         if (expiryTime !== null) {
             scheduleDeletion(id, expiryTime);
         }
@@ -94,11 +107,11 @@ app.post("/api/convert", upload.single("file"), (req, res) => {
         
         let expiryText = "never";
         if (expiryTime) {
-            const expiryDate = new Date(expiryTime);
-            expiryText = expiryDate.toISOString();
+            expiryText = new Date(expiryTime).toISOString();
         }
 
-        res.setHeader("Content-Type", "application/json");
+        console.log("Success! ID:", id);
+        
         return res.json({
             success: true,
             id: id,
@@ -112,35 +125,38 @@ app.post("/api/convert", upload.single("file"), (req, res) => {
             expiresAt: expiryText,
             createdAt: new Date().toISOString()
         });
+        
     } catch (error) {
         console.error("Convert error:", error);
-        return res.status(500).json({ error: "Internal server error" });
+        return res.status(500).json({ error: error.message || "Internal server error" });
     }
 });
 
 // Proxy endpoint
 app.get("/x/BitWrap/:id", (req, res) => {
+    console.log("=== Proxy called ===");
     const id = req.params.id.split(".")[0];
     const file = store.get(id);
 
     if (!file) {
+        console.log("File not found:", id);
         return res.status(404).send("File not found or expired");
     }
 
     const buffer = Buffer.from(file.data, "base64");
     res.setHeader("Content-Type", file.type);
     
-    // Cache control based on duration
     if (file.duration === "forever") {
         res.setHeader("Cache-Control", "public, max-age=31536000");
     } else {
         res.setHeader("Cache-Control", "public, max-age=3600");
     }
     
+    console.log("Serving file:", id);
     return res.send(buffer);
 });
 
-// Get file info endpoint
+// Get file info
 app.get("/api/info/:id", (req, res) => {
     const id = req.params.id;
     const file = store.get(id);
@@ -160,7 +176,7 @@ app.get("/api/info/:id", (req, res) => {
     });
 });
 
-// Delete file endpoint
+// Delete file
 app.delete("/api/delete/:id", (req, res) => {
     const id = req.params.id;
     
@@ -172,7 +188,7 @@ app.delete("/api/delete/:id", (req, res) => {
     return res.json({ success: true, message: "File deleted" });
 });
 
-// List all active files (for debugging)
+// List files
 app.get("/api/list", (req, res) => {
     const files = [];
     for (const [id, file] of store.entries()) {
@@ -195,16 +211,18 @@ app.get("/api/health", (req, res) => {
         status: "ok",
         storeSize: store.size,
         uptime: process.uptime(),
-        memoryUsage: process.memoryUsage().rss
+        timestamp: new Date().toISOString()
     });
 });
 
-// 404 handler
+// Handle 404 untuk API
 app.use((req, res) => {
-    if (req.path === "/api/convert" || req.path.startsWith("/api/")) {
-        return res.status(404).json({ error: "API endpoint not found" });
+    console.log("404:", req.method, req.path);
+    if (req.path.startsWith("/api/")) {
+        return res.status(404).json({ error: `API endpoint not found: ${req.path}` });
     }
     res.status(404).send("Not Found");
 });
 
+// Export untuk Vercel
 export default app;
