@@ -6,7 +6,7 @@
       "dest": "/api/convert.js"
     },
     {
-      "src": "/x/BitWrap/(.*)",
+      "src": "/s/(.*)",
       "dest": "/api/convert.js"
     },
     {
