@@ -30,7 +30,6 @@
       padding: 40px;
       width: 100%;
       max-width: 500px;
-      transition: all 0.3s ease;
     }
 
     h1 {
@@ -39,7 +38,6 @@
       font-size: 2em;
       margin-bottom: 10px;
       text-shadow: 0 0 10px #4a0e8a;
-      letter-spacing: 2px;
     }
 
     .subtitle {
@@ -56,7 +54,6 @@
       padding: 30px;
       text-align: center;
       cursor: pointer;
-      transition: all 0.3s;
       margin-bottom: 20px;
     }
 
@@ -96,7 +93,6 @@
       font-size: 1.1em;
       font-weight: bold;
       cursor: pointer;
-      transition: all 0.3s;
       margin: 10px 0;
       font-family: monospace;
     }
@@ -104,10 +100,6 @@
     button:hover {
       transform: translateY(-2px);
       box-shadow: 0 10px 25px rgba(138, 43, 226, 0.4);
-    }
-
-    button:active {
-      transform: translateY(0);
     }
 
     .result {
@@ -123,10 +115,6 @@
       color: #b87cff;
       text-decoration: none;
       border-bottom: 1px solid #b87cff;
-    }
-
-    .result a:hover {
-      color: #ff9eff;
     }
 
     .loading {
@@ -156,7 +144,7 @@
   <div class="file-area" onclick="document.getElementById('fileInput').click()">
     <input type="file" id="fileInput" accept="image/*,video/*">
     <div class="file-label">📁 CLICK TO SELECT FILE</div>
-    <div style="font-size: 0.8em; margin-top: 10px; color: #6a4e8a;">Image or Video (max 50MB)</div>
+    <div style="font-size: 0.8em; margin-top: 10px; color: #6a4e8a;">Image or Video</div>
   </div>
 
   <div id="fileStatus" class="file-status">⚡ No file selected</div>
@@ -193,58 +181,36 @@
       return;
     }
 
-    if (selectedFile.size > 50 * 1024 * 1024) {
-      resultDiv.innerHTML = '<div class="error">❌ ERROR: File too large! Maximum 50MB.</div>';
-      return;
-    }
-
     resultDiv.innerHTML = '<div class="loading">⏳ PROCESSING... Converting to Base64 & generating short link...</div>';
 
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const base64String = e.target.result;
+    const formData = new FormData();
+    formData.append('file', selectedFile);
 
-      try {
-        const response = await fetch('/upload', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            file: base64String,
-            filename: selectedFile.name,
-            type: selectedFile.type
-          })
-        });
+    try {
+      const response = await fetch('/upload', {
+        method: 'POST',
+        body: formData
+      });
 
-        const data = await response.json();
+      const data = await response.json();
 
-        if (response.ok && data.proxyUrl) {
-          const fullUrl = window.location.origin + data.proxyUrl;
-          resultDiv.innerHTML = `
-            <div class="success">✅ SUCCESS!</div>
-            <hr>
-            <div>🔗 SHORT LINK:</div>
-            <div><a href="${fullUrl}" target="_blank">${fullUrl}</a></div>
-            <hr>
-            <div>📦 BASE64 (preview):</div>
-            <div style="font-size: 0.7em; opacity: 0.8;">${data.base64}</div>
-            <hr>
-            <div>💾 File akan tersedia selama 1 jam</div>
-          `;
-        } else {
-          resultDiv.innerHTML = `<div class="error">❌ ERROR: ${data.error || 'Unknown error'}</div>`;
-        }
-      } catch (error) {
-        resultDiv.innerHTML = `<div class="error">❌ NETWORK ERROR: ${error.message}</div>`;
+      if (response.ok && data.proxyUrl) {
+        const fullUrl = window.location.origin + data.proxyUrl;
+        resultDiv.innerHTML = `
+          <div class="success">✅ SUCCESS!</div>
+          <hr>
+          <div>🔗 SHORT LINK:</div>
+          <div><a href="${fullUrl}" target="_blank">${fullUrl}</a></div>
+          <hr>
+          <div>📦 BASE64 (preview):</div>
+          <div style="font-size: 0.7em; opacity: 0.8;">${data.base64}</div>
+        `;
+      } else {
+        resultDiv.innerHTML = `<div class="error">❌ ERROR: ${data.error || 'Unknown error'}</div>`;
       }
-    };
-
-    reader.onerror = () => {
-      resultDiv.innerHTML = '<div class="error">❌ ERROR: Failed to read file</div>';
-    };
-
-    reader.readAsDataURL(selectedFile);
+    } catch (error) {
+      resultDiv.innerHTML = `<div class="error">❌ NETWORK ERROR: ${error.message}</div>`;
+    }
   });
 </script>
 </body>
