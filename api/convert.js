@@ -1,17 +1,13 @@
 import multer from "multer";
 import crypto from "crypto";
 
-// Store di global supaya bisa diakses antar request (masih riskan di Vercel)
-// Tapi ini solusi terbaik tanpa database eksternal
+// Global store untuk nyimpen Data URL (Vercel serverless tetap riskan)
+// Tapi ini solusi terbaik tanpa database
 const globalStore = global._bitwrapStore || new Map();
 global._bitwrapStore = globalStore;
 
 function randomId(len) {
     return crypto.randomBytes(len).toString("hex").slice(0, len);
-}
-
-function isValidFile(mimetype) {
-    return mimetype.startsWith("image/") || mimetype.startsWith("video/");
 }
 
 function getExpiryTime(duration) {
@@ -40,7 +36,6 @@ function runMiddleware(req, res, fn) {
 }
 
 export default async function handler(req, res) {
-    // Set CORS
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -51,9 +46,8 @@ export default async function handler(req, res) {
     
     const url = req.url || "";
     
-    // ========== HANDLE GET = short link ==========
+    // ========== HANDLE GET = short link redirect ke Data URL ==========
     if (req.method === "GET") {
-        // Extract ID dari /s/abc123.png atau /s/abc123
         let match = url.match(/\/s\/([^\/?#]+)/);
         if (match) {
             let id = match[1];
@@ -63,49 +57,51 @@ export default async function handler(req, res) {
             
             console.log("GET Shortlink - ID:", id);
             
-            const file = globalStore.get(id);
+            const data = globalStore.get(id);
             
-            if (!file) {
+            if (!data) {
                 return res.status(404).send(`
                     <!DOCTYPE html>
                     <html>
-                    <head><title>File Not Found</title></head>
-                    <body style="background:#0b0b12;color:white;text-align:center;padding:50px;font-family:Arial">
-                        <h1>404 - File Not Found</h1>
-                        <p>File sudah expired atau tidak ditemukan.</p>
-                        <a href="/" style="color:#6a00ff">Kembali ke Home</a>
+                    <head><title>Link Expired</title>
+                    <style>body{background:#0a0a0f;color:white;text-align:center;padding:50px;font-family:Arial}</style>
+                    </head>
+                    <body>
+                        <h1>🔗 Link Expired</h1>
+                        <p>Link sudah kadaluarsa atau tidak ditemukan.</p>
+                        <a href="/" style="color:#6a00ff">Buat Link Baru</a>
                     </body>
                     </html>
                 `);
             }
             
             // Cek expiry
-            if (file.expiryTime && Date.now() > file.expiryTime) {
+            if (data.expiryTime && Date.now() > data.expiryTime) {
                 globalStore.delete(id);
                 return res.status(410).send(`
                     <!DOCTYPE html>
                     <html>
-                    <head><title>File Expired</title></head>
-                    <body style="background:#0b0b12;color:white;text-align:center;padding:50px;font-family:Arial">
-                        <h1>410 - File Expired</h1>
-                        <p>File sudah melewati batas waktu penyimpanan.</p>
-                        <a href="/" style="color:#6a00ff">Kembali ke Home</a>
+                    <head><title>Link Expired</title>
+                    <style>body{background:#0a0a0f;color:white;text-align:center;padding:50px;font-family:Arial}</style>
+                    </head>
+                    <body>
+                        <h1>⏰ Link Expired</h1>
+                        <p>Link sudah melewati batas waktu yang ditentukan.</p>
+                        <a href="/" style="color:#6a00ff">Buat Link Baru</a>
                     </body>
                     </html>
                 `);
             }
             
-            const buffer = Buffer.from(file.data, "base64");
-            res.setHeader("Content-Type", file.type);
-            res.setHeader("Cache-Control", "public, max-age=3600");
-            return res.send(buffer);
+            // Redirect ke Data URL
+            console.log("Redirecting to Data URL, length:", data.dataUrl.length);
+            return res.redirect(302, data.dataUrl);
         }
         
-        // Jika bukan shortlink, lanjut ke static file
         return res.status(404).send("Not found");
     }
     
-    // ========== HANDLE POST = upload file ==========
+    // ========== HANDLE POST = upload file → Data URL → short link ==========
     if (req.method === "POST") {
         try {
             await runMiddleware(req, res, upload.single("file"));
@@ -114,59 +110,63 @@ export default async function handler(req, res) {
                 return res.status(400).json({ error: "No file uploaded" });
             }
             
-            if (!isValidFile(req.file.mimetype)) {
-                return res.status(400).json({ error: "Invalid file type. Only images and videos allowed" });
-            }
-            
-            const duration = req.body.duration || "24h";
             const isImage = req.file.mimetype.startsWith("image");
-            const ext = isImage ? "png" : "mp4";
-            const id = randomId(isImage ? 8 : 6);
+            const duration = req.body.duration || "24h";
+            
+            // STEP 1: Convert ke Base64
             const base64 = req.file.buffer.toString("base64");
+            
+            // STEP 2: Buat Data URL panjang
+            const dataUrl = `data:${req.file.mimetype};base64,${base64}`;
+            
+            // STEP 3: Buat ID unik untuk short link
+            const id = randomId(6);
+            const ext = isImage ? "png" : "mp4";
             const expiryTime = getExpiryTime(duration);
             
-            const fileData = {
-                data: base64,
-                type: req.file.mimetype,
-                createdAt: Date.now(),
-                duration: duration,
-                expiryTime: expiryTime,
+            // STEP 4: Simpan Data URL ke store dengan ID
+            globalStore.set(id, {
+                dataUrl: dataUrl,
+                mimeType: req.file.mimetype,
+                filename: req.file.originalname,
                 size: req.file.size,
-                filename: req.file.originalname
-            };
+                createdAt: Date.now(),
+                expiryTime: expiryTime,
+                duration: duration
+            });
             
-            globalStore.set(id, fileData);
             console.log("Stored ID:", id, "Store size:", globalStore.size);
             
             // Schedule deletion
             if (expiryTime !== null) {
                 const delay = expiryTime - Date.now();
-                if (delay > 0 && delay < 30 * 24 * 60 * 60 * 1000) { // Max 30 days
+                if (delay > 0 && delay < 30 * 24 * 60 * 60 * 1000) {
                     setTimeout(() => {
                         if (globalStore.has(id)) {
                             globalStore.delete(id);
-                            console.log(`File ${id} deleted after expiry`);
+                            console.log(`ID ${id} deleted after expiry`);
                         }
                     }, delay);
                 }
             }
             
+            // STEP 5: Buat short link
             const shortLink = `/s/${id}.${ext}`;
-            const fullUrl = `${req.headers["x-forwarded-proto"] || "https"}://${req.headers["host"]}${shortLink}`;
+            const fullShortLink = `${req.headers["x-forwarded-proto"] || "https"}://${req.headers["host"]}${shortLink}`;
             
             return res.status(200).json({
                 success: true,
                 id: id,
                 shortLink: shortLink,
-                fullUrl: fullUrl,
+                fullUrl: fullShortLink,
+                dataUrl: dataUrl.substring(0, 100) + "... (truncated)",
+                fullDataUrl: dataUrl,
                 filename: req.file.originalname,
                 size: req.file.size,
-                type: req.file.mimetype,
+                mimeType: req.file.mimetype,
                 duration: duration,
                 expiresAt: expiryTime ? new Date(expiryTime).toISOString() : "never",
-                createdAt: new Date().toISOString(),
-                // API endpoint untuk convert (sama dengan endpoint ini)
-                apiEndpoint: `/api/convert`
+                createdAt: new Date().toISOString()
             });
             
         } catch (error) {
