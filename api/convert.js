@@ -1,7 +1,10 @@
 import multer from "multer";
 import crypto from "crypto";
 
-const store = new Map();
+// Store di global supaya bisa diakses antar request (masih riskan di Vercel)
+// Tapi ini solusi terbaik tanpa database eksternal
+const globalStore = global._bitwrapStore || new Map();
+global._bitwrapStore = globalStore;
 
 function randomId(len) {
     return crypto.randomBytes(len).toString("hex").slice(0, len);
@@ -47,29 +50,49 @@ export default async function handler(req, res) {
     }
     
     const url = req.url || "";
-    console.log("Method:", req.method, "URL:", url);
     
-    // HANDLE GET PROXY - ambil file dari store
+    // ========== HANDLE GET = short link ==========
     if (req.method === "GET") {
-        // Extract ID dari URL: /x/BitWrap/1a54c859cd.png
-        let match = url.match(/\/x\/BitWrap\/([^\/?#]+)/);
-        if (!match) {
-            match = url.match(/\/api\/convert\/([^\/?#]+)/);
-        }
-        
+        // Extract ID dari /s/abc123.png atau /s/abc123
+        let match = url.match(/\/s\/([^\/?#]+)/);
         if (match) {
             let id = match[1];
             if (id && id.includes(".")) {
                 id = id.split(".")[0];
             }
             
-            console.log("GET Proxy - Extracted ID:", id);
+            console.log("GET Shortlink - ID:", id);
             
-            const file = store.get(id);
+            const file = globalStore.get(id);
             
             if (!file) {
-                console.log("File not found in store. Available IDs:", Array.from(store.keys()));
-                return res.status(404).send("File not found or expired");
+                return res.status(404).send(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head><title>File Not Found</title></head>
+                    <body style="background:#0b0b12;color:white;text-align:center;padding:50px;font-family:Arial">
+                        <h1>404 - File Not Found</h1>
+                        <p>File sudah expired atau tidak ditemukan.</p>
+                        <a href="/" style="color:#6a00ff">Kembali ke Home</a>
+                    </body>
+                    </html>
+                `);
+            }
+            
+            // Cek expiry
+            if (file.expiryTime && Date.now() > file.expiryTime) {
+                globalStore.delete(id);
+                return res.status(410).send(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head><title>File Expired</title></head>
+                    <body style="background:#0b0b12;color:white;text-align:center;padding:50px;font-family:Arial">
+                        <h1>410 - File Expired</h1>
+                        <p>File sudah melewati batas waktu penyimpanan.</p>
+                        <a href="/" style="color:#6a00ff">Kembali ke Home</a>
+                    </body>
+                    </html>
+                `);
             }
             
             const buffer = Buffer.from(file.data, "base64");
@@ -78,11 +101,11 @@ export default async function handler(req, res) {
             return res.send(buffer);
         }
         
-        // Jika bukan proxy request, return 404
+        // Jika bukan shortlink, lanjut ke static file
         return res.status(404).send("Not found");
     }
     
-    // HANDLE POST UPLOAD
+    // ========== HANDLE POST = upload file ==========
     if (req.method === "POST") {
         try {
             await runMiddleware(req, res, upload.single("file"));
@@ -98,7 +121,7 @@ export default async function handler(req, res) {
             const duration = req.body.duration || "24h";
             const isImage = req.file.mimetype.startsWith("image");
             const ext = isImage ? "png" : "mp4";
-            const id = randomId(isImage ? 10 : 8);
+            const id = randomId(isImage ? 8 : 6);
             const base64 = req.file.buffer.toString("base64");
             const expiryTime = getExpiryTime(duration);
             
@@ -112,35 +135,38 @@ export default async function handler(req, res) {
                 filename: req.file.originalname
             };
             
-            store.set(id, fileData);
-            console.log("File stored with ID:", id, "Store size:", store.size);
+            globalStore.set(id, fileData);
+            console.log("Stored ID:", id, "Store size:", globalStore.size);
             
+            // Schedule deletion
             if (expiryTime !== null) {
                 const delay = expiryTime - Date.now();
-                if (delay > 0) {
+                if (delay > 0 && delay < 30 * 24 * 60 * 60 * 1000) { // Max 30 days
                     setTimeout(() => {
-                        if (store.has(id)) {
-                            store.delete(id);
+                        if (globalStore.has(id)) {
+                            globalStore.delete(id);
                             console.log(`File ${id} deleted after expiry`);
                         }
                     }, delay);
                 }
             }
             
-            const proxyUrl = `/x/BitWrap/${id}.${ext}`;
+            const shortLink = `/s/${id}.${ext}`;
+            const fullUrl = `${req.headers["x-forwarded-proto"] || "https"}://${req.headers["host"]}${shortLink}`;
             
             return res.status(200).json({
                 success: true,
                 id: id,
-                link: proxyUrl,
-                base64: base64.substring(0, 100) + "...",
-                fullBase64: base64,
-                type: req.file.mimetype,
-                size: req.file.size,
+                shortLink: shortLink,
+                fullUrl: fullUrl,
                 filename: req.file.originalname,
+                size: req.file.size,
+                type: req.file.mimetype,
                 duration: duration,
                 expiresAt: expiryTime ? new Date(expiryTime).toISOString() : "never",
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toISOString(),
+                // API endpoint untuk convert (sama dengan endpoint ini)
+                apiEndpoint: `/api/convert`
             });
             
         } catch (error) {
