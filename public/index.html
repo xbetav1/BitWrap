@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BitWrap - Short Link untuk Data URL</title>
+    <title>BitWrap - Short Link Media Converter</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     <style>
         * {
@@ -46,19 +46,30 @@
             margin-right: 10px;
         }
         
+        .nav-links a {
+            color: #888;
+            text-decoration: none;
+            margin-left: 25px;
+            transition: color 0.3s;
+        }
+        
+        .nav-links a:hover {
+            color: #a855f7;
+        }
+        
         .container {
-            max-width: 900px;
+            max-width: 1000px;
             margin: 0 auto;
             padding: 40px 20px;
         }
         
         .hero {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 50px;
         }
         
         .hero h1 {
-            font-size: 2.8rem;
+            font-size: 3rem;
             margin-bottom: 15px;
             background: linear-gradient(135deg, #6a00ff, #a855f7);
             -webkit-background-clip: text;
@@ -68,7 +79,7 @@
         
         .hero p {
             color: #888;
-            font-size: 1rem;
+            font-size: 1.1rem;
         }
         
         .card {
@@ -77,6 +88,15 @@
             padding: 30px;
             border: 1px solid rgba(106, 0, 255, 0.2);
             margin-bottom: 30px;
+        }
+        
+        .card-title {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            color: #a855f7;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
         .file-area {
@@ -97,9 +117,18 @@
         }
         
         .file-area i {
-            font-size: 55px;
+            font-size: 60px;
             color: #6a00ff;
             margin-bottom: 15px;
+        }
+        
+        .file-area p {
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+        
+        .file-area small {
+            color: #666;
         }
         
         input[type="file"] {
@@ -134,9 +163,9 @@
         
         .duration-option label {
             display: block;
-            padding: 10px 15px;
+            padding: 12px 20px;
             background: #1a1a2e;
-            border-radius: 10px;
+            border-radius: 12px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s;
@@ -151,6 +180,10 @@
             color: white;
         }
         
+        .duration-option label:hover {
+            border-color: #6a00ff;
+        }
+        
         .status {
             margin: 20px 0;
             padding: 12px 20px;
@@ -158,10 +191,25 @@
             font-weight: 500;
         }
         
-        .status.success { background: #0f3b1f; color: #00ff88; }
-        .status.error { background: #3b1f1f; color: #ff4444; }
-        .status.waiting { background: #1f2a3b; color: #ffaa44; }
-        .status.loading { background: #1f2a3b; color: #6a00ff; }
+        .status.success {
+            background: #0f3b1f;
+            color: #00ff88;
+        }
+        
+        .status.error {
+            background: #3b1f1f;
+            color: #ff4444;
+        }
+        
+        .status.waiting {
+            background: #1f2a3b;
+            color: #ffaa44;
+        }
+        
+        .status.loading {
+            background: #1f2a3b;
+            color: #6a00ff;
+        }
         
         .btn {
             background: linear-gradient(135deg, #6a00ff, #a855f7);
@@ -229,32 +277,34 @@
             font-size: 0.8rem;
             width: auto;
             display: inline-block;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
         }
         
         .info-text {
-            font-size: 0.8rem;
-            color: #888;
+            font-size: 0.9rem;
+            color: #ddd;
             margin-top: 15px;
             padding: 12px;
             background: #1a1a2e;
             border-radius: 10px;
+            line-height: 1.6;
         }
         
-        .flow-diagram {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin: 20px 0;
-            flex-wrap: wrap;
-            font-size: 0.75rem;
-            color: #666;
-        }
-        
-        .flow-step {
+        .preview {
+            margin-top: 20px;
+            text-align: center;
+            padding: 15px;
             background: #1a1a2e;
-            padding: 8px 15px;
-            border-radius: 20px;
+            border-radius: 10px;
+        }
+        
+        .preview img, .preview video {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 10px;
         }
         
         .footer {
@@ -289,11 +339,16 @@
 
     <div class="container">
         <div class="hero">
-            <h1>Short Link untuk Data URL</h1>
-            <p>Upload file → Convert ke Data URL base64 → Dapatkan Link Pendek</p>
+            <h1>Short Link Media Converter</h1>
+            <p>Upload gambar/video → Dapatkan link pendek yang bisa dibagikan</p>
         </div>
 
         <div class="card">
+            <div class="card-title">
+                <i class="fa-solid fa-cloud-upload-alt"></i>
+                Upload File
+            </div>
+            
             <div class="file-area" id="fileArea">
                 <i class="fa-solid fa-cloud-arrow-up"></i>
                 <p>Klik atau drag & drop file di sini</p>
@@ -302,7 +357,7 @@
             <input type="file" id="fileInput" accept="image/*,video/*">
 
             <div class="duration-selector">
-                <label><i class="fa-regular fa-clock"></i> Durasi Link:</label>
+                <label><i class="fa-regular fa-clock"></i> Durasi Penyimpanan Link:</label>
                 <div class="duration-options">
                     <div class="duration-option">
                         <input type="radio" name="duration" value="24h" id="dur24h" checked>
@@ -328,45 +383,39 @@
             </div>
 
             <button class="btn" id="convertBtn">
-                <i class="fa-solid fa-link"></i> Convert → Buat Link Pendek
+                <i class="fa-solid fa-link"></i> Convert & Buat Link Pendek
             </button>
         </div>
 
         <div class="result-card" id="resultCard">
-            <h3><i class="fa-solid fa-check-circle"></i> Link Pendek Berhasil Dibuat!</h3>
+            <h3><i class="fa-solid fa-link"></i> Link Pendek Berhasil Dibuat!</h3>
             
             <div class="result-field">
-                <label>🔗 SHORT LINK (Shareable URL)</label>
+                <label>🔗 Link Pendek (Shareable URL)</label>
                 <input type="text" id="shortLinkInput" readonly>
-                <button class="copy-btn" data-input="shortLinkInput">
+                <button class="copy-btn" data-input="shortLinkInput" data-full="true">
                     <i class="fa-regular fa-copy"></i> Copy Link
-                </button>
-                <button class="copy-btn" id="openLinkBtn" style="margin-left:8px">
-                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka
                 </button>
             </div>
             
             <div class="result-field">
-                <label>📦 Data URL (Base64 panjang yang dipendekin)</label>
-                <input type="text" id="dataUrlPreview" readonly placeholder="Data URL (truncated)">
+                <label>📋 API Endpoint</label>
+                <input type="text" id="apiInput" readonly value="/api/convert">
+                <button class="copy-btn" data-input="apiInput">
+                    <i class="fa-regular fa-copy"></i> Copy
+                </button>
             </div>
             
             <div class="info-text" id="infoText"></div>
             
-            <div class="flow-diagram">
-                <span class="flow-step"><i class="fa-solid fa-file"></i> File</span>
-                <i class="fa-solid fa-arrow-right"></i>
-                <span class="flow-step"><i class="fa-solid fa-code"></i> Base64</span>
-                <i class="fa-solid fa-arrow-right"></i>
-                <span class="flow-step"><i class="fa-solid fa-link"></i> Data URL</span>
-                <i class="fa-solid fa-arrow-right"></i>
-                <span class="flow-step"><i class="fa-solid fa-shortcode"></i> Short Link</span>
+            <div class="preview" id="preview">
+                <small><i class="fa-regular fa-eye"></i> Preview akan muncul di sini</small>
             </div>
         </div>
 
         <div class="footer">
-            <p><i class="fa-regular fa-clock"></i> Short link akan redirect ke Data URL asli</p>
-            <p class="badge">File → Base64 → Data URL → Short Link</p>
+            <p><i class="fa-regular fa-clock"></i> File akan otomatis dihapus sesuai durasi yang dipilih</p>
+            <p class="badge">Powered by BitWrap</p>
         </div>
     </div>
 
@@ -428,7 +477,7 @@
             selectedFile = file;
             const fileType = file.type.startsWith("image") ? "Gambar" : "Video";
             statusDiv.className = "status success";
-            statusDiv.innerHTML = `<i class="fa-solid fa-check-circle"></i> ${fileType} siap: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+            statusDiv.innerHTML = `<i class="fa-solid fa-check-circle"></i> ${fileType} siap: \( {file.name} ( \){(file.size / 1024 / 1024).toFixed(2)} MB)`;
         }
 
         function getSelectedDuration() {
@@ -455,7 +504,7 @@
             convertBtn.disabled = true;
             convertBtn.innerHTML = '<i class="fa-solid fa-spinner fa-pulse"></i> Processing...';
             statusDiv.className = "status loading";
-            statusDiv.innerHTML = '<i class="fa-solid fa-spinner fa-pulse"></i> Mengconvert file...';
+            statusDiv.innerHTML = '<i class="fa-solid fa-spinner fa-pulse"></i> Mengupload dan membuat link...';
 
             const formData = new FormData();
             formData.append("file", selectedFile);
@@ -473,28 +522,30 @@
                     throw new Error(data.error || "Convert failed");
                 }
 
-                // Tampilkan short link
                 const fullUrl = window.location.origin + data.shortLink;
                 document.getElementById("shortLinkInput").value = fullUrl;
-                document.getElementById("shortLinkInput").setAttribute("data-full", fullUrl);
-                
-                // Tampilkan preview Data URL (truncated)
-                document.getElementById("dataUrlPreview").value = data.dataUrl;
-                
-                // Info
+
                 const infoDiv = document.getElementById("infoText");
                 infoDiv.innerHTML = `
-                    <i class="fa-regular fa-file"></i> Nama file: ${data.filename}<br>
-                    <i class="fa-regular fa-hard-drive"></i> Ukuran: ${(data.size / 1024 / 1024).toFixed(2)} MB<br>
-                    <i class="fa-regular fa-file-image"></i> Tipe: ${data.mimeType}<br>
-                    <i class="fa-regular fa-clock"></i> Durasi: ${formatDurationText(data.duration)}<br>
-                    <i class="fa-regular fa-hourglass-half"></i> Expires: ${data.expiresAt !== "never" ? new Date(data.expiresAt).toLocaleString() : "Tidak akan pernah"}<br>
-                    <i class="fa-regular fa-keyboard"></i> Panjang Data URL: ${data.fullDataUrl ? data.fullDataUrl.length.toLocaleString() : "?"} karakter
+                    <strong>Nama file:</strong> ${data.filename}<br>
+                    <strong>Ukuran:</strong> ${(data.size / 1024 / 1024).toFixed(2)} MB<br>
+                    <strong>Tipe:</strong> ${data.type}<br>
+                    <strong>Durasi:</strong> ${formatDurationText(data.duration)}<br>
+                    <strong>Upload:</strong> ${new Date(data.createdAt).toLocaleString()}<br>
+                    <strong>Expires:</strong> ${data.expiresAt !== "never" ? new Date(data.expiresAt).toLocaleString() : "Tidak akan expired"}
                 `;
                 
                 resultCard.style.display = "block";
+
+                const previewDiv = document.getElementById("preview");
+                if (selectedFile.type.startsWith("image")) {
+                    previewDiv.innerHTML = `<img src="${fullUrl}" alt="Preview" onerror="this.style.display='none'">`;
+                } else {
+                    previewDiv.innerHTML = `<video controls src="${fullUrl}" style="max-width:100%; max-height:300px; border-radius:10px;"></video>`;
+                }
+
                 statusDiv.className = "status success";
-                statusDiv.innerHTML = '<i class="fa-solid fa-check-circle"></i> Short link berhasil dibuat!';
+                statusDiv.innerHTML = '<i class="fa-solid fa-check-circle"></i> Link pendek berhasil dibuat!';
 
                 resultCard.scrollIntoView({ behavior: "smooth" });
 
@@ -505,46 +556,34 @@
                 resultCard.style.display = "none";
             } finally {
                 convertBtn.disabled = false;
-                convertBtn.innerHTML = '<i class="fa-solid fa-link"></i> Convert → Buat Link Pendek';
+                convertBtn.innerHTML = '<i class="fa-solid fa-link"></i> Convert & Buat Link Pendek';
             }
         }
 
-        // Copy function
+        // Copy button functionality
         document.querySelectorAll(".copy-btn").forEach(btn => {
             btn.addEventListener("click", async function() {
                 const inputId = this.getAttribute("data-input");
-                if (inputId) {
-                    const input = document.getElementById(inputId);
-                    let textToCopy = input.value;
-                    
-                    if (textToCopy) {
-                        try {
-                            await navigator.clipboard.writeText(textToCopy);
-                            const originalText = this.innerHTML;
-                            this.innerHTML = '<i class="fa-regular fa-check"></i> Copied!';
-                            setTimeout(() => {
-                                this.innerHTML = originalText;
-                            }, 1500);
-                        } catch (err) {
-                            input.select();
-                            document.execCommand("copy");
-                            const originalText = this.innerHTML;
-                            this.innerHTML = '<i class="fa-regular fa-check"></i> Copied!';
-                            setTimeout(() => {
-                                this.innerHTML = originalText;
-                            }, 1500);
-                        }
-                    }
+                const input = document.getElementById(inputId);
+                let textToCopy = input.value;
+
+                if (this.getAttribute("data-full") === "true") {
+                    textToCopy = input.value;
+                }
+
+                try {
+                    await navigator.clipboard.writeText(textToCopy);
+                    const original = this.innerHTML;
+                    this.innerHTML = '<i class="fa-regular fa-check"></i> Copied!';
+                    setTimeout(() => this.innerHTML = original, 1500);
+                } catch (err) {
+                    input.select();
+                    document.execCommand("copy");
+                    const original = this.innerHTML;
+                    this.innerHTML = '<i class="fa-regular fa-check"></i> Copied!';
+                    setTimeout(() => this.innerHTML = original, 1500);
                 }
             });
-        });
-
-        // Open link button
-        document.getElementById("openLinkBtn")?.addEventListener("click", () => {
-            const linkInput = document.getElementById("shortLinkInput");
-            if (linkInput.value) {
-                window.open(linkInput.value, "_blank");
-            }
         });
 
         convertBtn.onclick = convert;
