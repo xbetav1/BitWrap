@@ -3,72 +3,167 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dark Proxy</title>
+  <title>Dark Proxy - File to Base64 & Short Link</title>
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     body {
-      background: #0a0a0f;
-      color: #ddd;
-      font-family: monospace;
+      background: linear-gradient(135deg, #0a0a0f 0%, #050508 100%);
+      font-family: 'Courier New', monospace;
+      min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
-      margin: 0;
+      padding: 20px;
     }
+
     .container {
-      background: #111;
-      padding: 2rem;
-      border-radius: 12px;
-      border: 1px solid #2a2a3a;
-      box-shadow: 0 0 20px rgba(75, 0, 130, 0.3);
-      width: 400px;
-      text-align: center;
-    }
-    h1 {
-      color: #a55eff;
-      text-shadow: 0 0 5px #3a0ca3;
-    }
-    input, button {
-      background: #1e1e2a;
-      border: 1px solid #2e2e3a;
-      color: #fff;
-      padding: 10px;
-      margin: 10px 0;
+      background: rgba(10, 10, 20, 0.9);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      border: 1px solid #2a1a4a;
+      box-shadow: 0 0 50px rgba(75, 0, 130, 0.5);
+      padding: 40px;
       width: 100%;
-      border-radius: 8px;
+      max-width: 500px;
+      transition: all 0.3s ease;
     }
-    button {
-      background: #3a0ca3;
+
+    h1 {
+      text-align: center;
+      color: #b87cff;
+      font-size: 2em;
+      margin-bottom: 10px;
+      text-shadow: 0 0 10px #4a0e8a;
+      letter-spacing: 2px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #6a4e8a;
+      margin-bottom: 30px;
+      font-size: 0.8em;
+    }
+
+    .file-area {
+      background: #0f0f1a;
+      border: 2px dashed #3a2a5a;
+      border-radius: 15px;
+      padding: 30px;
+      text-align: center;
       cursor: pointer;
-      transition: 0.2s;
+      transition: all 0.3s;
+      margin-bottom: 20px;
     }
-    button:hover {
-      background: #5a2ecc;
-      box-shadow: 0 0 8px #7b2cbf;
+
+    .file-area:hover {
+      border-color: #8a6eff;
+      background: #15152a;
     }
-    #result {
-      margin-top: 20px;
-      background: #000000aa;
-      padding: 10px;
-      border-radius: 8px;
-      word-break: break-all;
+
+    .file-area input {
+      display: none;
     }
-    a {
-      color: #b77eff;
+
+    .file-label {
+      cursor: pointer;
+      color: #b87cff;
+      font-size: 1.1em;
     }
+
     .file-status {
-      font-size: 0.9rem;
-      color: #77ff77;
+      background: #0a0a12;
+      padding: 12px;
+      border-radius: 10px;
+      margin: 15px 0;
+      text-align: center;
+      color: #6aff9e;
+      font-size: 0.9em;
+      border-left: 3px solid #6aff9e;
+    }
+
+    button {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, #4a0e8a 0%, #8a2be2 100%);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-size: 1.1em;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin: 10px 0;
+      font-family: monospace;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(138, 43, 226, 0.4);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .result {
+      background: #0a0a12;
+      border-radius: 10px;
+      padding: 20px;
+      margin-top: 20px;
+      word-break: break-all;
+      border: 1px solid #2a1a4a;
+    }
+
+    .result a {
+      color: #b87cff;
+      text-decoration: none;
+      border-bottom: 1px solid #b87cff;
+    }
+
+    .result a:hover {
+      color: #ff9eff;
+    }
+
+    .loading {
+      text-align: center;
+      color: #ffcc44;
+    }
+
+    .error {
+      color: #ff6666;
+    }
+
+    .success {
+      color: #66ff99;
+    }
+
+    hr {
+      border-color: #2a1a4a;
+      margin: 15px 0;
     }
   </style>
 </head>
 <body>
 <div class="container">
   <h1>⚡ DARK PROXY ⚡</h1>
-  <input type="file" id="fileInput" accept="image/*,video/*">
-  <div id="fileStatus" class="file-status">📁 Belum ada file dipilih</div>
-  <button id="uploadBtn">⬆ UPLOAD</button>
-  <div id="result"></div>
+  <div class="subtitle">Convert to Base64 & Short Link</div>
+
+  <div class="file-area" onclick="document.getElementById('fileInput').click()">
+    <input type="file" id="fileInput" accept="image/*,video/*">
+    <div class="file-label">📁 CLICK TO SELECT FILE</div>
+    <div style="font-size: 0.8em; margin-top: 10px; color: #6a4e8a;">Image or Video (max 50MB)</div>
+  </div>
+
+  <div id="fileStatus" class="file-status">⚡ No file selected</div>
+
+  <button id="uploadBtn">🚀 UPLOAD & CONVERT</button>
+
+  <div id="result" class="result"></div>
 </div>
 
 <script>
@@ -82,41 +177,74 @@
   fileInput.addEventListener('change', (e) => {
     selectedFile = e.target.files[0];
     if (selectedFile) {
-      fileStatus.innerHTML = `✅ File siap: ${selectedFile.name} (${(selectedFile.size / 1024).toFixed(2)} KB)`;
+      const fileSizeMB = (selectedFile.size / (1024 * 1024)).toFixed(2);
+      const fileType = selectedFile.type.split('/')[0];
+      fileStatus.innerHTML = `✅ SELECTED: ${selectedFile.name} (${fileSizeMB} MB) - Type: ${fileType.toUpperCase()}`;
+      fileStatus.style.borderLeftColor = '#66ff99';
     } else {
-      fileStatus.innerHTML = `📁 Belum ada file dipilih`;
+      fileStatus.innerHTML = '⚡ No file selected';
+      fileStatus.style.borderLeftColor = '#6aff9e';
     }
   });
 
   uploadBtn.addEventListener('click', async () => {
     if (!selectedFile) {
-      resultDiv.innerHTML = '<span style="color:#ff7777">❌ Pilih file dulu!</span>';
+      resultDiv.innerHTML = '<div class="error">❌ ERROR: Please select a file first!</div>';
       return;
     }
 
-    const formData = new FormData();
-    formData.append('file', selectedFile);
-
-    resultDiv.innerHTML = '⏳ Memproses...';
-
-    try {
-      const res = await fetch('/upload', {
-        method: 'POST',
-        body: formData
-      });
-      const data = await res.json();
-      if (data.proxyUrl) {
-        resultDiv.innerHTML = `
-          <div>✅ Sukses!</div>
-          <div>🔗 Proxy: <a href="${data.proxyUrl}" target="_blank">${data.proxyUrl}</a></div>
-          <div>📦 Base64 (potongan): ${data.base64.substring(0, 80)}...</div>
-        `;
-      } else {
-        resultDiv.innerHTML = `<span style="color:#ff7777">❌ Error: ${data.error}</span>`;
-      }
-    } catch (err) {
-      resultDiv.innerHTML = `<span style="color:#ff7777">❌ Gagal upload: ${err.message}</span>`;
+    if (selectedFile.size > 50 * 1024 * 1024) {
+      resultDiv.innerHTML = '<div class="error">❌ ERROR: File too large! Maximum 50MB.</div>';
+      return;
     }
+
+    resultDiv.innerHTML = '<div class="loading">⏳ PROCESSING... Converting to Base64 & generating short link...</div>';
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const base64String = e.target.result;
+
+      try {
+        const response = await fetch('/upload', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            file: base64String,
+            filename: selectedFile.name,
+            type: selectedFile.type
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.proxyUrl) {
+          const fullUrl = window.location.origin + data.proxyUrl;
+          resultDiv.innerHTML = `
+            <div class="success">✅ SUCCESS!</div>
+            <hr>
+            <div>🔗 SHORT LINK:</div>
+            <div><a href="${fullUrl}" target="_blank">${fullUrl}</a></div>
+            <hr>
+            <div>📦 BASE64 (preview):</div>
+            <div style="font-size: 0.7em; opacity: 0.8;">${data.base64}</div>
+            <hr>
+            <div>💾 File akan tersedia selama 1 jam</div>
+          `;
+        } else {
+          resultDiv.innerHTML = `<div class="error">❌ ERROR: ${data.error || 'Unknown error'}</div>`;
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `<div class="error">❌ NETWORK ERROR: ${error.message}</div>`;
+      }
+    };
+
+    reader.onerror = () => {
+      resultDiv.innerHTML = '<div class="error">❌ ERROR: Failed to read file</div>';
+    };
+
+    reader.readAsDataURL(selectedFile);
   });
 </script>
 </body>
