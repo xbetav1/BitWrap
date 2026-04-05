@@ -16,6 +16,16 @@ app.use(express.static('public'));
 const proxyDir = '/tmp/proxy';
 if (!fs.existsSync(proxyDir)) fs.mkdirSync(proxyDir, { recursive: true });
 
+// Route untuk root (halaman utama)
+app.get('/', (req, res) => {
+  const htmlPath = path.join(__dirname, 'public', 'index.html');
+  if (fs.existsSync(htmlPath)) {
+    res.sendFile(htmlPath);
+  } else {
+    res.status(404).send('index.html not found');
+  }
+});
+
 app.post('/upload', upload.single('file'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
