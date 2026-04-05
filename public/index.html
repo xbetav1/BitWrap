@@ -1,592 +1,123 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BitWrap - Short Link Media Converter</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            background: linear-gradient(135deg, #0a0a0f 0%, #12121a 100%);
-            color: #e0e0e0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            min-height: 100vh;
-        }
-        
-        .navbar {
-            background: rgba(10, 10, 15, 0.95);
-            backdrop-filter: blur(10px);
-            padding: 15px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid rgba(106, 0, 255, 0.3);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        
-        .logo {
-            font-size: 1.8rem;
-            font-weight: bold;
-            background: linear-gradient(135deg, #6a00ff, #a855f7);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-        
-        .logo i {
-            color: #6a00ff;
-            margin-right: 10px;
-        }
-        
-        .nav-links a {
-            color: #888;
-            text-decoration: none;
-            margin-left: 25px;
-            transition: color 0.3s;
-        }
-        
-        .nav-links a:hover {
-            color: #a855f7;
-        }
-        
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 40px 20px;
-        }
-        
-        .hero {
-            text-align: center;
-            margin-bottom: 50px;
-        }
-        
-        .hero h1 {
-            font-size: 3rem;
-            margin-bottom: 15px;
-            background: linear-gradient(135deg, #6a00ff, #a855f7);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-        
-        .hero p {
-            color: #888;
-            font-size: 1.1rem;
-        }
-        
-        .card {
-            background: rgba(18, 18, 28, 0.95);
-            border-radius: 20px;
-            padding: 30px;
-            border: 1px solid rgba(106, 0, 255, 0.2);
-            margin-bottom: 30px;
-        }
-        
-        .card-title {
-            font-size: 1.3rem;
-            margin-bottom: 20px;
-            color: #a855f7;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .file-area {
-            background: #0f0f17;
-            border: 2px dashed #6a00ff;
-            border-radius: 15px;
-            padding: 40px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-bottom: 20px;
-        }
-        
-        .file-area:hover {
-            border-color: #a855f7;
-            background: #14141f;
-            transform: translateY(-2px);
-        }
-        
-        .file-area i {
-            font-size: 60px;
-            color: #6a00ff;
-            margin-bottom: 15px;
-        }
-        
-        .file-area p {
-            font-size: 1.1rem;
-            margin-bottom: 8px;
-        }
-        
-        .file-area small {
-            color: #666;
-        }
-        
-        input[type="file"] {
-            display: none;
-        }
-        
-        .duration-selector {
-            margin-bottom: 20px;
-        }
-        
-        .duration-selector label {
-            display: block;
-            margin-bottom: 12px;
-            color: #a855f7;
-            font-weight: bold;
-        }
-        
-        .duration-options {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-        
-        .duration-option {
-            flex: 1;
-            min-width: 80px;
-        }
-        
-        .duration-option input {
-            display: none;
-        }
-        
-        .duration-option label {
-            display: block;
-            padding: 12px 20px;
-            background: #1a1a2e;
-            border-radius: 12px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            border: 1px solid #333;
-            margin: 0;
-            font-weight: normal;
-        }
-        
-        .duration-option input:checked + label {
-            background: linear-gradient(135deg, #6a00ff, #a855f7);
-            border-color: #6a00ff;
-            color: white;
-        }
-        
-        .duration-option label:hover {
-            border-color: #6a00ff;
-        }
-        
-        .status {
-            margin: 20px 0;
-            padding: 12px 20px;
-            border-radius: 12px;
-            font-weight: 500;
-        }
-        
-        .status.success {
-            background: #0f3b1f;
-            color: #00ff88;
-        }
-        
-        .status.error {
-            background: #3b1f1f;
-            color: #ff4444;
-        }
-        
-        .status.waiting {
-            background: #1f2a3b;
-            color: #ffaa44;
-        }
-        
-        .status.loading {
-            background: #1f2a3b;
-            color: #6a00ff;
-        }
-        
-        .btn {
-            background: linear-gradient(135deg, #6a00ff, #a855f7);
-            color: white;
-            border: none;
-            padding: 14px 30px;
-            border-radius: 50px;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-            width: 100%;
-        }
-        
-        .btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(106, 0, 255, 0.3);
-        }
-        
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        
-        .result-card {
-            margin-top: 30px;
-            padding: 25px;
-            background: #0f0f17;
-            border-radius: 15px;
-            display: none;
-            border: 1px solid rgba(106, 0, 255, 0.3);
-        }
-        
-        .result-card h3 {
-            margin-bottom: 20px;
-            color: #a855f7;
-        }
-        
-        .result-field {
-            margin-bottom: 20px;
-        }
-        
-        .result-field label {
-            display: block;
-            font-size: 0.8rem;
-            color: #888;
-            margin-bottom: 8px;
-        }
-        
-        .result-field input {
-            width: 100%;
-            padding: 12px 15px;
-            background: #1a1a2e;
-            border: 1px solid #333;
-            border-radius: 10px;
-            color: #00ff88;
-            font-family: monospace;
-            font-size: 0.85rem;
-        }
-        
-        .copy-btn {
-            background: #2a2a3e;
-            padding: 8px 18px;
-            margin-top: 8px;
-            font-size: 0.8rem;
-            width: auto;
-            display: inline-block;
-            border: none;
-            border-radius: 8px;
-            color: white;
-            cursor: pointer;
-        }
-        
-        .info-text {
-            font-size: 0.9rem;
-            color: #ddd;
-            margin-top: 15px;
-            padding: 12px;
-            background: #1a1a2e;
-            border-radius: 10px;
-            line-height: 1.6;
-        }
-        
-        .preview {
-            margin-top: 20px;
-            text-align: center;
-            padding: 15px;
-            background: #1a1a2e;
-            border-radius: 10px;
-        }
-        
-        .preview img, .preview video {
-            max-width: 100%;
-            max-height: 300px;
-            border-radius: 10px;
-        }
-        
-        .footer {
-            text-align: center;
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid #222;
-            font-size: 0.7rem;
-            color: #555;
-        }
-        
-        .badge {
-            display: inline-block;
-            background: rgba(106, 0, 255, 0.2);
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            color: #a855f7;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dark Proxy</title>
+  <style>
+    body {
+      background: #0a0a0f;
+      color: #ddd;
+      font-family: monospace;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: #111;
+      padding: 2rem;
+      border-radius: 12px;
+      border: 1px solid #2a2a3a;
+      box-shadow: 0 0 20px rgba(75, 0, 130, 0.3);
+      width: 400px;
+      text-align: center;
+    }
+    h1 {
+      color: #a55eff;
+      text-shadow: 0 0 5px #3a0ca3;
+    }
+    input, button {
+      background: #1e1e2a;
+      border: 1px solid #2e2e3a;
+      color: #fff;
+      padding: 10px;
+      margin: 10px 0;
+      width: 100%;
+      border-radius: 8px;
+    }
+    button {
+      background: #3a0ca3;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    button:hover {
+      background: #5a2ecc;
+      box-shadow: 0 0 8px #7b2cbf;
+    }
+    #result {
+      margin-top: 20px;
+      background: #000000aa;
+      padding: 10px;
+      border-radius: 8px;
+      word-break: break-all;
+    }
+    a {
+      color: #b77eff;
+    }
+    .file-status {
+      font-size: 0.9rem;
+      color: #77ff77;
+    }
+  </style>
 </head>
 <body>
-    <nav class="navbar">
-        <div class="logo">
-            <i class="fa-solid fa-bolt"></i> BitWrap
-        </div>
-        <div class="nav-links">
-            <a href="/">Home</a>
-            <a href="#" onclick="location.reload()">New Upload</a>
-        </div>
-    </nav>
+<div class="container">
+  <h1>⚡ DARK PROXY ⚡</h1>
+  <input type="file" id="fileInput" accept="image/*,video/*">
+  <div id="fileStatus" class="file-status">📁 Belum ada file dipilih</div>
+  <button id="uploadBtn">⬆ UPLOAD</button>
+  <div id="result"></div>
+</div>
 
-    <div class="container">
-        <div class="hero">
-            <h1>Short Link Media Converter</h1>
-            <p>Upload gambar/video → Dapatkan link pendek yang bisa dibagikan</p>
-        </div>
+<script>
+  const fileInput = document.getElementById('fileInput');
+  const fileStatus = document.getElementById('fileStatus');
+  const uploadBtn = document.getElementById('uploadBtn');
+  const resultDiv = document.getElementById('result');
 
-        <div class="card">
-            <div class="card-title">
-                <i class="fa-solid fa-cloud-upload-alt"></i>
-                Upload File
-            </div>
-            
-            <div class="file-area" id="fileArea">
-                <i class="fa-solid fa-cloud-arrow-up"></i>
-                <p>Klik atau drag & drop file di sini</p>
-                <small>Support: JPG, PNG, GIF, MP4, MOV (Max 500MB)</small>
-            </div>
-            <input type="file" id="fileInput" accept="image/*,video/*">
+  let selectedFile = null;
 
-            <div class="duration-selector">
-                <label><i class="fa-regular fa-clock"></i> Durasi Penyimpanan Link:</label>
-                <div class="duration-options">
-                    <div class="duration-option">
-                        <input type="radio" name="duration" value="24h" id="dur24h" checked>
-                        <label for="dur24h">24 Jam</label>
-                    </div>
-                    <div class="duration-option">
-                        <input type="radio" name="duration" value="7d" id="dur7d">
-                        <label for="dur7d">7 Hari</label>
-                    </div>
-                    <div class="duration-option">
-                        <input type="radio" name="duration" value="30d" id="dur30d">
-                        <label for="dur30d">30 Hari</label>
-                    </div>
-                    <div class="duration-option">
-                        <input type="radio" name="duration" value="forever" id="durForever">
-                        <label for="durForever">Selamanya</label>
-                    </div>
-                </div>
-            </div>
+  fileInput.addEventListener('change', (e) => {
+    selectedFile = e.target.files[0];
+    if (selectedFile) {
+      fileStatus.innerHTML = `✅ File siap: ${selectedFile.name} (${(selectedFile.size / 1024).toFixed(2)} KB)`;
+    } else {
+      fileStatus.innerHTML = `📁 Belum ada file dipilih`;
+    }
+  });
 
-            <div class="status waiting" id="status">
-                <i class="fa-solid fa-circle-info"></i> Belum ada file dipilih
-            </div>
+  uploadBtn.addEventListener('click', async () => {
+    if (!selectedFile) {
+      resultDiv.innerHTML = '<span style="color:#ff7777">❌ Pilih file dulu!</span>';
+      return;
+    }
 
-            <button class="btn" id="convertBtn">
-                <i class="fa-solid fa-link"></i> Convert & Buat Link Pendek
-            </button>
-        </div>
+    const formData = new FormData();
+    formData.append('file', selectedFile);
 
-        <div class="result-card" id="resultCard">
-            <h3><i class="fa-solid fa-link"></i> Link Pendek Berhasil Dibuat!</h3>
-            
-            <div class="result-field">
-                <label>🔗 Link Pendek (Shareable URL)</label>
-                <input type="text" id="shortLinkInput" readonly>
-                <button class="copy-btn" data-input="shortLinkInput" data-full="true">
-                    <i class="fa-regular fa-copy"></i> Copy Link
-                </button>
-            </div>
-            
-            <div class="result-field">
-                <label>📋 API Endpoint</label>
-                <input type="text" id="apiInput" readonly value="/api/convert">
-                <button class="copy-btn" data-input="apiInput">
-                    <i class="fa-regular fa-copy"></i> Copy
-                </button>
-            </div>
-            
-            <div class="info-text" id="infoText"></div>
-            
-            <div class="preview" id="preview">
-                <small><i class="fa-regular fa-eye"></i> Preview akan muncul di sini</small>
-            </div>
-        </div>
+    resultDiv.innerHTML = '⏳ Memproses...';
 
-        <div class="footer">
-            <p><i class="fa-regular fa-clock"></i> File akan otomatis dihapus sesuai durasi yang dipilih</p>
-            <p class="badge">Powered by BitWrap</p>
-        </div>
-    </div>
-
-    <script>
-        const fileInput = document.getElementById("fileInput");
-        const fileArea = document.getElementById("fileArea");
-        const statusDiv = document.getElementById("status");
-        const convertBtn = document.getElementById("convertBtn");
-        const resultCard = document.getElementById("resultCard");
-
-        let selectedFile = null;
-
-        fileArea.addEventListener("click", () => fileInput.click());
-        
-        fileArea.addEventListener("dragover", (e) => {
-            e.preventDefault();
-            fileArea.style.borderColor = "#a855f7";
-            fileArea.style.background = "#14141f";
-        });
-        
-        fileArea.addEventListener("dragleave", () => {
-            fileArea.style.borderColor = "#6a00ff";
-            fileArea.style.background = "#0f0f17";
-        });
-        
-        fileArea.addEventListener("drop", (e) => {
-            e.preventDefault();
-            fileArea.style.borderColor = "#6a00ff";
-            fileArea.style.background = "#0f0f17";
-            if (e.dataTransfer.files.length) {
-                handleFile(e.dataTransfer.files[0]);
-            }
-        });
-
-        fileInput.addEventListener("change", (e) => {
-            if (e.target.files.length) {
-                handleFile(e.target.files[0]);
-            }
-        });
-
-        function handleFile(file) {
-            const validTypes = ["image/", "video/"];
-            const isValid = validTypes.some(t => file.type.startsWith(t));
-            
-            if (!isValid) {
-                statusDiv.className = "status error";
-                statusDiv.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Format tidak support! Hanya gambar/video.';
-                selectedFile = null;
-                return;
-            }
-            
-            if (file.size > 500 * 1024 * 1024) {
-                statusDiv.className = "status error";
-                statusDiv.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> File terlalu besar! Maksimal 500MB.';
-                selectedFile = null;
-                return;
-            }
-
-            selectedFile = file;
-            const fileType = file.type.startsWith("image") ? "Gambar" : "Video";
-            statusDiv.className = "status success";
-            statusDiv.innerHTML = `<i class="fa-solid fa-check-circle"></i> ${fileType} siap: \( {file.name} ( \){(file.size / 1024 / 1024).toFixed(2)} MB)`;
-        }
-
-        function getSelectedDuration() {
-            const selected = document.querySelector('input[name="duration"]:checked');
-            return selected ? selected.value : "24h";
-        }
-
-        function formatDurationText(duration) {
-            switch(duration) {
-                case "24h": return "24 jam";
-                case "7d": return "7 hari";
-                case "30d": return "30 hari";
-                case "forever": return "Selamanya (tidak expired)";
-                default: return duration;
-            }
-        }
-
-        async function convert() {
-            if (!selectedFile) {
-                alert("Pilih file dulu!");
-                return;
-            }
-
-            convertBtn.disabled = true;
-            convertBtn.innerHTML = '<i class="fa-solid fa-spinner fa-pulse"></i> Processing...';
-            statusDiv.className = "status loading";
-            statusDiv.innerHTML = '<i class="fa-solid fa-spinner fa-pulse"></i> Mengupload dan membuat link...';
-
-            const formData = new FormData();
-            formData.append("file", selectedFile);
-            formData.append("duration", getSelectedDuration());
-
-            try {
-                const res = await fetch("/api/convert", {
-                    method: "POST",
-                    body: formData
-                });
-
-                const data = await res.json();
-
-                if (!res.ok || data.error) {
-                    throw new Error(data.error || "Convert failed");
-                }
-
-                const fullUrl = window.location.origin + data.shortLink;
-                document.getElementById("shortLinkInput").value = fullUrl;
-
-                const infoDiv = document.getElementById("infoText");
-                infoDiv.innerHTML = `
-                    <strong>Nama file:</strong> ${data.filename}<br>
-                    <strong>Ukuran:</strong> ${(data.size / 1024 / 1024).toFixed(2)} MB<br>
-                    <strong>Tipe:</strong> ${data.type}<br>
-                    <strong>Durasi:</strong> ${formatDurationText(data.duration)}<br>
-                    <strong>Upload:</strong> ${new Date(data.createdAt).toLocaleString()}<br>
-                    <strong>Expires:</strong> ${data.expiresAt !== "never" ? new Date(data.expiresAt).toLocaleString() : "Tidak akan expired"}
-                `;
-                
-                resultCard.style.display = "block";
-
-                const previewDiv = document.getElementById("preview");
-                if (selectedFile.type.startsWith("image")) {
-                    previewDiv.innerHTML = `<img src="${fullUrl}" alt="Preview" onerror="this.style.display='none'">`;
-                } else {
-                    previewDiv.innerHTML = `<video controls src="${fullUrl}" style="max-width:100%; max-height:300px; border-radius:10px;"></video>`;
-                }
-
-                statusDiv.className = "status success";
-                statusDiv.innerHTML = '<i class="fa-solid fa-check-circle"></i> Link pendek berhasil dibuat!';
-
-                resultCard.scrollIntoView({ behavior: "smooth" });
-
-            } catch (err) {
-                console.error("Error:", err);
-                statusDiv.className = "status error";
-                statusDiv.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> Error: ${err.message}`;
-                resultCard.style.display = "none";
-            } finally {
-                convertBtn.disabled = false;
-                convertBtn.innerHTML = '<i class="fa-solid fa-link"></i> Convert & Buat Link Pendek';
-            }
-        }
-
-        // Copy button functionality
-        document.querySelectorAll(".copy-btn").forEach(btn => {
-            btn.addEventListener("click", async function() {
-                const inputId = this.getAttribute("data-input");
-                const input = document.getElementById(inputId);
-                let textToCopy = input.value;
-
-                if (this.getAttribute("data-full") === "true") {
-                    textToCopy = input.value;
-                }
-
-                try {
-                    await navigator.clipboard.writeText(textToCopy);
-                    const original = this.innerHTML;
-                    this.innerHTML = '<i class="fa-regular fa-check"></i> Copied!';
-                    setTimeout(() => this.innerHTML = original, 1500);
-                } catch (err) {
-                    input.select();
-                    document.execCommand("copy");
-                    const original = this.innerHTML;
-                    this.innerHTML = '<i class="fa-regular fa-check"></i> Copied!';
-                    setTimeout(() => this.innerHTML = original, 1500);
-                }
-            });
-        });
-
-        convertBtn.onclick = convert;
-    </script>
+    try {
+      const res = await fetch('/upload', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (data.proxyUrl) {
+        resultDiv.innerHTML = `
+          <div>✅ Sukses!</div>
+          <div>🔗 Proxy: <a href="${data.proxyUrl}" target="_blank">${data.proxyUrl}</a></div>
+          <div>📦 Base64 (potongan): ${data.base64.substring(0, 80)}...</div>
+        `;
+      } else {
+        resultDiv.innerHTML = `<span style="color:#ff7777">❌ Error: ${data.error}</span>`;
+      }
+    } catch (err) {
+      resultDiv.innerHTML = `<span style="color:#ff7777">❌ Gagal upload: ${err.message}</span>`;
+    }
+  });
+</script>
 </body>
 </html>
