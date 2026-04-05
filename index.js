@@ -1,74 +1,68 @@
 const express = require('express');
 const cors = require('cors');
-const { v4: uuidv4 } = require('uuid');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const uid = require('uid-safe');
+const mime = require('mime-types');
 
 const app = express();
+const upload = multer({ dest: '/tmp/uploads/' });
+
 app.use(cors());
-app.use(express.json({ limit: '50mb' }));
+app.use(express.json());
 app.use(express.static('public'));
 
-const storage = new Map();
+const proxyDir = '/tmp/proxy';
+if (!fs.existsSync(proxyDir)) fs.mkdirSync(proxyDir, { recursive: true });
 
-app.post('/upload', (req, res) => {
-  const { file, filename, type } = req.body;
-
-  if (!file) {
-    return res.status(400).json({ error: 'No file provided' });
+app.post('/upload', upload.single('file'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded' });
   }
 
-  const isVideo = type?.startsWith('video/') || filename?.match(/\.(mp4|mov|avi|mkv|webm)$/i);
-  const isImage = type?.startsWith('image/') || filename?.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i);
+  const fileBuffer = fs.readFileSync(req.file.path);
+  const mimeType = req.file.mimetype;
+  const isVideo = mimeType.startsWith('video/');
+  const isImage = mimeType.startsWith('image/');
 
   if (!isVideo && !isImage) {
+    fs.unlinkSync(req.file.path);
     return res.status(400).json({ error: 'Only image or video files are allowed' });
   }
 
-  const idLength = isVideo ? 8 : 6;
   const ext = isVideo ? '.mp4' : '.png';
+  const idLength = isVideo ? 8 : 6;
   let id;
+  let filePath;
   do {
-    id = uuidv4().replace(/-/g, '').substring(0, idLength);
-  } while (storage.has(id));
+    id = uid.sync(idLength);
+    filePath = path.join(proxyDir, `${id}${ext}`);
+  } while (fs.existsSync(filePath));
 
-  let base64Data = file;
-  if (file.includes(',')) {
-    base64Data = file.split(',')[1];
-  }
-
-  const buffer = Buffer.from(base64Data, 'base64');
-  storage.set(id, {
-    buffer: buffer,
-    mimeType: type || (isVideo ? 'video/mp4' : 'image/png'),
-    ext: ext
-  });
-
-  setTimeout(() => storage.delete(id), 3600000);
+  fs.writeFileSync(filePath, fileBuffer);
+  fs.unlinkSync(req.file.path);
 
   const proxyUrl = `/x/${id}${ext}`;
-  res.json({
-    proxyUrl: proxyUrl,
-    base64: file.substring(0, 100) + '...'
-  });
+  const base64 = fileBuffer.toString('base64');
+  
+  res.json({ proxyUrl, base64: base64.substring(0, 100) + '...' });
 });
 
 app.get('/x/:id', (req, res) => {
-  const param = req.params.id;
-  const id = param.replace(/\.(png|mp4)$/, '');
-  const data = storage.get(id);
-
-  if (data) {
-    res.setHeader('Content-Type', data.mimeType);
-    res.send(data.buffer);
+  const filePath = path.join(proxyDir, req.params.id);
+  if (fs.existsSync(filePath)) {
+    const mimeType = mime.lookup(filePath) || 'application/octet-stream';
+    res.setHeader('Content-Type', mimeType);
+    fs.createReadStream(filePath).pipe(res);
   } else {
-    res.status(404).send('File not found or expired');
+    res.status(404).send('File not found');
   }
 });
 
 const PORT = process.env.PORT || 3000;
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-}
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
 module.exports = app;
